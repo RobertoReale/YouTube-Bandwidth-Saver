@@ -40,7 +40,7 @@ chrome://extensions → Developer mode → Load unpacked
 
 ## Features & UI
 
-- **Popup UI**: Choose between "Always Active", "Per Tab", or "Disabled".
+- **Smart Extension Icon**: Click the extension icon to toggle the bandwidth saver on the current tab (in Manual mode). Right-click the icon to access the **Options page** to switch between "Always Active", "Manual (Per Tab)", or "Disabled" modes.
 - **Visual Overlay**: Covers low-resolution video with a sleek background or optional thumbnail.
 - **Keyboard Shortcut**: Press `Alt+A` to toggle instantly.
 

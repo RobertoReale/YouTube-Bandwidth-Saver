@@ -34,12 +34,39 @@ export default defineBackground(() => {
   });
 
   browser.action.onClicked.addListener((tab) => {
-    if (tab.id !== undefined) void toggleTab(tab.id, tab.url);
+    if (tab.id !== undefined) {
+      void (async () => {
+        const settings = await getSettings();
+        if (settings.mode !== 'per-tab') {
+          await browser.runtime.openOptionsPage();
+          return;
+        }
+
+        const url = tab.url;
+        const isSupported =
+          url &&
+          SUPPORTED_HOSTS.some((host) => {
+            try {
+              return new URL(url).hostname === host;
+            } catch {
+              return false;
+            }
+          });
+
+        if (isSupported) {
+          await toggleTab(tab.id!, tab.url);
+        } else {
+          await browser.runtime.openOptionsPage();
+        }
+      })();
+    }
   });
 
   browser.commands.onCommand.addListener((command) => {
     if (command !== 'toggle-audio-only') return;
     void (async () => {
+      const settings = await getSettings();
+      if (settings.mode !== 'per-tab') return;
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.id !== undefined) await toggleTab(tab.id, tab.url);
     })();
