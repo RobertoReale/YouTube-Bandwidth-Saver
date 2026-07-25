@@ -36,13 +36,7 @@ export interface BridgeTarget {
 
 /** MAIN → ISOLATED. Closed set. */
 export type MainToIsolated =
-  | { readonly kind: 'hello'; readonly token: string }
-  | {
-      readonly kind: 'filter-applied';
-      readonly videoId: string | null;
-      readonly bytesSaved: number;
-    }
-  | { readonly kind: 'filter-skipped'; readonly reason: string; readonly isLive: boolean };
+  | { readonly kind: 'hello'; readonly token: string };
 
 /** ISOLATED → MAIN. Closed set. */
 export type IsolatedToMain = { readonly kind: 'set-enabled'; readonly enabled: boolean };

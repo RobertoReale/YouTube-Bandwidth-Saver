@@ -53,10 +53,9 @@ describe('ISOLATED ↔ MAIN bridge', () => {
     const main = createMainBridge(() => undefined, controller().signal, target);
 
     await flush();
-    main.send({ kind: 'filter-applied', videoId: 'abc', bytesSaved: 1024 });
-    await flush();
-
-    expect(received).toEqual([{ kind: 'filter-applied', videoId: 'abc', bytesSaved: 1024 }]);
+    // No payloads sent by main anymore other than hello, which is internal.
+    // We just ensure it doesn't crash.
+    expect(received).toEqual([]);
   });
 
   it('MAIN receives set-enabled from ISOLATED', async () => {
@@ -90,7 +89,7 @@ describe('ISOLATED ↔ MAIN bridge', () => {
     createMainBridge(() => undefined, controller().signal, target);
     await flush();
 
-    forge({ __ytao: 'ytao:v1', token: 'wrong-token', payload: { kind: 'filter-applied' } });
+    forge({ __ytao: 'ytao:v1', token: 'wrong-token', payload: { kind: 'unknown' } });
     await flush();
 
     expect(received).toHaveLength(0);
@@ -102,7 +101,7 @@ describe('ISOLATED ↔ MAIN bridge', () => {
     createMainBridge(() => undefined, controller().signal, target);
     await flush();
 
-    forge({ kind: 'filter-applied' });
+    forge({ kind: 'unknown' });
     forge('string');
     forge(null);
     forge({ __ytao: 'other-channel', token: 'x', payload: {} });
@@ -123,7 +122,7 @@ describe('ISOLATED ↔ MAIN bridge', () => {
     forge({
       __ytao: 'ytao:v1',
       token: 'page-token',
-      payload: { kind: 'filter-applied', videoId: 'x', bytesSaved: 1 },
+      payload: { kind: 'unknown' },
     });
     await flush();
 

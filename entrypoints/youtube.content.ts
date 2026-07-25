@@ -18,7 +18,6 @@ import { readCachedDecision, writeCachedDecision } from '../lib/sync-cache';
 
 import '../lib/ui/ui.css';
 import { createOverlay } from '../lib/ui/overlay';
-import { createPlayerButton } from '../lib/ui/player-button';
 
 export default defineContentScript({
   matches: ['*://www.youtube.com/*', '*://music.youtube.com/*'],
@@ -35,13 +34,8 @@ export default defineContentScript({
     const currentThumbnail = '';
     let currentIsLive = false;
 
-    const playerButton = createPlayerButton({
-      root: document,
-      signal,
-      onClick: () => {
-        void sendMessage({ type: 'TOGGLE_TAB' });
-      },
-    });
+    // User requested to remove the in-player button.
+    // They will use the extension popup instead.
 
     const overlay = createOverlay({
       root: document,
@@ -52,20 +46,6 @@ export default defineContentScript({
       switch (message.kind) {
         case 'hello':
           break;
-        case 'filter-applied':
-          currentIsLive = false;
-          // If thumbnail arrives use it, but in Plan C SABR it might be missing; update overlay
-          overlay.updateState(readCachedDecision(), currentIsLive, currentThumbnail);
-          void sendMessage({
-            type: 'REPORT_STATS',
-            stats: { estimatedBytesSaved: message.bytesSaved },
-          });
-          break;
-        case 'filter-skipped':
-          currentIsLive = message.isLive ?? false;
-          overlay.updateState(readCachedDecision(), currentIsLive, currentThumbnail);
-          if (message.isLive) void sendMessage({ type: 'REPORT_LIVE' });
-          break;
       }
     }, signal);
 
@@ -73,7 +53,6 @@ export default defineContentScript({
       writeCachedDecision(enabled, mode);
       bridge.send({ kind: 'set-enabled', enabled });
 
-      playerButton.updateState(enabled);
       overlay.updateState(enabled, currentIsLive, currentThumbnail);
 
       // MAIN world already decided at `document_start`. If decision

@@ -15,6 +15,7 @@ To bypass this constraint safely (Plan C), the extension **intercepts HTML5 play
 ## What it does NOT do, by design
 
 - **No custom network requests.** No extra fetches for watch pages, `base.js`, or HEAD verification requests.
+- **No network interception.** To avoid triggering YouTube's anti-adblock systems, we do not monkeypatch `fetch`, `XMLHttpRequest`, or global variables like `ytInitialPlayerResponse`. We use native HTML5 player APIs instead.
 - **No `eval`, no remote code.** We do not reconstruct URLs or decipher signatures; YouTube handles media delivery natively.
 - **No server telemetry.** Saved MB counters and logs are stored *strictly locally* (`storage.session` and `storage.local`). No data ever leaves your device.
 - **No downloading, no ad blocking.** Out of scope for a focused utility extension. (We recommend uBlock Origin Lite if you want to block video ads).
@@ -39,7 +40,6 @@ chrome://extensions → Developer mode → Load unpacked
 
 ## Features & UI
 
-- **In-Player Button**: Integrated into YouTube player controls. Toggle bandwidth saver with one click.
 - **Popup UI**: Choose between "Always Active", "Per Tab", or "Disabled".
 - **Visual Overlay**: Covers low-resolution video with a sleek background or optional thumbnail.
 - **Keyboard Shortcut**: Press `Alt+A` to toggle instantly.

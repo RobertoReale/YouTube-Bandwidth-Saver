@@ -12,40 +12,6 @@
  * SPA navigation.
  */
 
-/** Names of global variables containing a player response. */
-export const PLAYER_RESPONSE_GLOBALS = ['ytInitialPlayerResponse'] as const;
-
-/**
- * InnerTube endpoints returning a player response.
- * Compared with `String.includes`, not equality: real URL carries
- * variable query strings (`?key=...&prettyPrint=false`).
- */
-export const PLAYER_ENDPOINTS = ['/youtubei/v1/player'] as const;
-
-/** Fields of player response read by `response-schema.ts`. */
-export const FIELDS = {
-  streamingData: 'streamingData',
-  adaptiveFormats: 'adaptiveFormats',
-  formats: 'formats',
-  videoDetails: 'videoDetails',
-  mimeType: 'mimeType',
-  hlsManifestUrl: 'hlsManifestUrl',
-  dashManifestUrl: 'dashManifestUrl',
-  drmParams: 'drmParams',
-  drmFamilies: 'drmFamilies',
-  /**
-   * ★ Presence = SABR (Server-Advised Bitrate) active.
-   *
-   * Observed on 2026-07-25 on www.youtube.com, anonymous user: `streamingData`
-   * contained `['expiresInSeconds', 'formats', 'adaptiveFormats',
-   * 'serverAbrStreamingUrl']`, and of the 6 tracks ZERO had `url` and ZERO
-   * `signatureCipher`. Formats are metadata only: playback relies on
-   * server. Filtering them client-side breaks player (403 on `videoplayback`).
-   * See RESEARCH.md R1.
-   */
-  serverAbrStreamingUrl: 'serverAbrStreamingUrl',
-} as const;
-
 /**
  * Quality levels of YouTube player, from lightest to heaviest.
  * Player API strings, thus dependent on YouTube.
