@@ -25,8 +25,11 @@ import { recordSchemaViolation } from '../lib/telemetry';
 const MATCHES = SUPPORTED_HOSTS.map((host) => `*://${host}/*`);
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener((details) => {
     void sweepClosedTabs();
+    if (details.reason === 'install') {
+      void browser.runtime.openOptionsPage();
+    }
   });
 
   browser.runtime.onStartup.addListener(() => {

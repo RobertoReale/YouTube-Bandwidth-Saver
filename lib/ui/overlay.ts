@@ -62,11 +62,12 @@ export function createOverlay(options: OverlayOptions): Overlay {
     const text = overlayEl.querySelector('.yt-bandwidth-saver-text') as HTMLDivElement;
 
     if (currentIsLive) {
-      text.textContent = 'Bandwidth Saver unavailable on live streams';
+      text.innerHTML = 'Bandwidth Saver unavailable on live streams';
       bg.style.backgroundImage = 'none';
       bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
     } else {
-      text.textContent = 'Bandwidth Saver Active';
+      text.innerHTML =
+        'Bandwidth Saver Active<br><span style="font-size: 12px; opacity: 0.7; display: block; margin-top: 8px; font-weight: normal;">(Right-click extension icon for options)</span>';
       if (currentThumbnail) {
         bg.style.backgroundImage = `url("${currentThumbnail}")`;
       } else {
