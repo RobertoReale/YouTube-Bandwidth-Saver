@@ -1,0 +1,44 @@
+name: Canary E2E Test
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # Ogni giorno alle 4:00 UTC
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        env:
+          # Permettiamo di scaricare uBlock Origin Lite crx on-the-fly per bypassare ads
+          UBLOCK_ORIGIN_LITE: true
+
+      - name: Create Issue on Failure
+        if: failure()
+        uses: dacbd/create-issue-action@main
+        with:
+          token: ${{ github.token }}
+          title: "⚠️ Canary fallito: YouTube potrebbe aver cambiato qualcosa"
+          body: |
+            Il test Canary E2E è fallito. YouTube potrebbe aver aggiornato il player o inserito nuovi formati.
+            Controlla i log di GitHub Actions per i dettagli sulle SchemaViolation.

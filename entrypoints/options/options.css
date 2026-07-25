@@ -1,0 +1,134 @@
+:root {
+  --bg-color: #f9f9f9;
+  --panel-bg: #ffffff;
+  --text-color: #0f0f0f;
+  --border-color: #e5e5e5;
+  --primary-color: #065fd4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #000000;
+    --panel-bg: #0f0f0f;
+    --text-color: #ffffff;
+    --border-color: #3f3f3f;
+    --primary-color: #3ea6ff;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: "YouTube Noto", Roboto, Arial, Helvetica, sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.options-container {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 40px;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.header {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.subtitle {
+  margin: 8px 0 0 0;
+  color: #606060;
+  font-size: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .subtitle {
+    color: #aaaaaa;
+  }
+}
+
+.settings-group {
+  padding: 16px 32px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  padding-right: 24px;
+}
+
+.setting-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.setting-desc {
+  font-size: 14px;
+  color: #606060;
+  line-height: 1.4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .setting-desc {
+    color: #aaaaaa;
+  }
+}
+
+.toggle-input {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.footer {
+  padding: 16px 32px;
+  display: flex;
+  justify-content: flex-end;
+  min-height: 24px;
+}
+
+.save-toast {
+  color: var(--primary-color);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.save-toast.visible {
+  opacity: 1;
+}
+
+.loading {
+  margin-top: 60px;
+  text-align: center;
+  color: #606060;
+  font-size: 16px;
+}

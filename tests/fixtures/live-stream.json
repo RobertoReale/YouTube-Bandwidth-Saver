@@ -1,0 +1,24 @@
+{
+  "videoDetails": {
+    "videoId": "FIXTURE_LIVE",
+    "isLive": true,
+    "isLiveContent": true
+  },
+  "streamingData": {
+    "hlsManifestUrl": "https://example.invalid/manifest.m3u8",
+    "adaptiveFormats": [
+      {
+        "itag": 96,
+        "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30
+      },
+      {
+        "itag": 140,
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+        "audioQuality": "AUDIO_QUALITY_MEDIUM"
+      }
+    ]
+  }
+}

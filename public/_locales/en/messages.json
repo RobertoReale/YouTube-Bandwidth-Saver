@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "YouTube Bandwidth Saver",
+    "description": "Name of the extension"
+  },
+  "extDesc": {
+    "message": "Minimizes YouTube video quality to save maximum bandwidth. No data collected, no network requests.",
+    "description": "Description of the extension"
+  }
+}

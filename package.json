@@ -1,0 +1,54 @@
+{
+  "name": "yt-bandwidth-saver",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Riduce al minimo la qualità video di YouTube per risparmiare il massimo della banda.",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "check": "pnpm lint && pnpm compile && pnpm test",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.14",
+    "@size-limit/preset-small-lib": "^13.0.1",
+    "@vitest/coverage-v8": "^3.2.7",
+    "happy-dom": "^20.0.0",
+    "playwright": "^1.61.1",
+    "size-limit": "^13.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wxt": "^0.20.12"
+  },
+  "size-limit": [
+    {
+      "path": ".output/chrome-mv3-dev/content-scripts/youtube.js",
+      "limit": "40 KB"
+    },
+    {
+      "path": ".output/chrome-mv3-dev/content-scripts/player-hook.js",
+      "limit": "15 KB"
+    },
+    {
+      "path": ".output/chrome-mv3-dev/background.js",
+      "limit": "30 KB"
+    },
+    {
+      "path": ".output/chrome-mv3-dev/popup/index.html",
+      "limit": "50 KB"
+    }
+  ],
+  "dependencies": {
+    "@preact/signals": "^2.10.0",
+    "preact": "^10.29.7"
+  }
+}

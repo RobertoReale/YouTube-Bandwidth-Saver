@@ -1,0 +1,11 @@
+# esbuild ha bisogno del suo script di postinstall per il binario nativo.
+# spawn-sync è una dipendenza transitiva legacy: non le serve, resta negata.
+allowBuilds:
+  esbuild: true
+  spawn-sync: false
+
+# WXT accetta vite ^5|^6|^7|^8, vitest ^5|^6|^7. Senza override pnpm installa
+# due copie (8.x per WXT, 7.x per vitest) e i tipi dei plugin diventano
+# incompatibili. Vite 7 è l'unica versione che soddisfa entrambi.
+overrides:
+  vite: ^7.3.6

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "yt-audio-only SPIKE (fase 0)",
+  "version": "0.0.1",
+  "description": "Spike di validazione: filtra le tracce video dal player response di YouTube. NON pubblicare.",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://music.youtube.com/*"
+      ],
+      "js": ["player-hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    }
+  ]
+}

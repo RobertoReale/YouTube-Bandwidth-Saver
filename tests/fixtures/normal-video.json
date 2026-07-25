@@ -1,0 +1,68 @@
+{
+  "videoDetails": {
+    "videoId": "FIXTURE_NORMAL",
+    "title": "Fixture sintetica",
+    "isLive": false,
+    "isLiveContent": false,
+    "thumbnail": {
+      "thumbnails": [{ "url": "https://example.invalid/thumb.jpg", "width": 336, "height": 188 }]
+    }
+  },
+  "playabilityStatus": { "status": "OK" },
+  "streamingData": {
+    "expiresInSeconds": "21540",
+    "formats": [
+      {
+        "itag": 18,
+        "mimeType": "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",
+        "width": 640,
+        "height": 360,
+        "contentLength": "12345678",
+        "quality": "medium",
+        "qualityLabel": "360p",
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "url": "https://example.invalid/progressive-18"
+      }
+    ],
+    "adaptiveFormats": [
+      {
+        "itag": 137,
+        "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "qualityLabel": "1080p",
+        "contentLength": "104857600",
+        "url": "https://example.invalid/video-137"
+      },
+      {
+        "itag": 248,
+        "mimeType": "video/webm; codecs=\"vp9\"",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "qualityLabel": "1080p",
+        "contentLength": "83886080",
+        "url": "https://example.invalid/video-248"
+      },
+      {
+        "itag": 140,
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+        "audioQuality": "AUDIO_QUALITY_MEDIUM",
+        "audioSampleRate": "44100",
+        "audioChannels": 2,
+        "contentLength": "9437184",
+        "url": "https://example.invalid/audio-140"
+      },
+      {
+        "itag": 251,
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "audioQuality": "AUDIO_QUALITY_MEDIUM",
+        "audioSampleRate": "48000",
+        "audioChannels": 2,
+        "contentLength": "8388608",
+        "url": "https://example.invalid/audio-251"
+      }
+    ]
+  }
+}
