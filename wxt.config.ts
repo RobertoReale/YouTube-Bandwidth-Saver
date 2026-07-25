@@ -32,7 +32,7 @@ export default defineConfig({
     },
     browser_specific_settings: {
       gecko: {
-        id: 'yt-bandwidth-saver@local.dev',
+        id: 'yt-bandwidth-saver@robertoreale.dev',
         strict_min_version: '128.0',
       },
     },
