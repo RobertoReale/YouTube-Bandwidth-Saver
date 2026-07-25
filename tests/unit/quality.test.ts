@@ -1,8 +1,8 @@
 /**
  * @vitest-environment happy-dom
  *
- * Piano C: forzatura della qualità minima. È il meccanismo principale da quando
- * SABR ha invalidato il filtro dei formati (RESEARCH.md R1).
+ * Plan C: forcing minimal quality. Main mechanism since
+ * SABR invalidated format filtering (RESEARCH.md R1).
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -14,7 +14,7 @@ import {
   pickLowestQuality,
 } from '../../lib/player/quality';
 
-/** Player finto che registra le chiamate ricevute. */
+/** Fake player registering received calls. */
 function fakePlayer(available: unknown = ['hd1080', 'hd720', 'large', 'medium', 'small', 'tiny']) {
   const calls: { range: [string, string][]; quality: string[] } = { range: [], quality: [] };
   const player: PlayerLike = {
@@ -26,17 +26,17 @@ function fakePlayer(available: unknown = ['hd1080', 'hd720', 'large', 'medium', 
 }
 
 describe('pickLowestQuality', () => {
-  it('sceglie il livello più leggero fra quelli offerti', () => {
+  it('picks lightest level among offered ones', () => {
     expect(pickLowestQuality(['hd1080', 'medium', 'hd720'])).toBe('medium');
     expect(pickLowestQuality(['hd1080', 'hd720'])).toBe('hd720');
     expect(pickLowestQuality(['tiny', 'hd1080'])).toBe('tiny');
   });
 
-  it('ignora le voci che non sono livelli noti, come "auto"', () => {
+  it('ignores entries that are not known levels, such as "auto"', () => {
     expect(pickLowestQuality(['auto', 'unknown', 'large'])).toBe('large');
   });
 
-  it("ripiega su tiny se l'elenco è illeggibile o vuoto", () => {
+  it('falls back to tiny if list is unreadable or empty', () => {
     expect(pickLowestQuality(undefined)).toBe('tiny');
     expect(pickLowestQuality(null)).toBe('tiny');
     expect(pickLowestQuality('hd720')).toBe('tiny');
@@ -46,8 +46,8 @@ describe('pickLowestQuality', () => {
 });
 
 describe('forceLowestQuality', () => {
-  it('★ fissa il RANGE e non solo la qualità corrente', () => {
-    // Senza il range, l'ABR risalirebbe al primo aggiustamento automatico.
+  it('★ sets the RANGE and not just current quality', () => {
+    // Without range, ABR would go back up on first automatic adjustment.
     const { player, calls } = fakePlayer();
     const outcome = forceLowestQuality(player);
 
@@ -56,37 +56,37 @@ describe('forceLowestQuality', () => {
     expect(calls.quality).toEqual(['tiny']);
   });
 
-  it('usa il livello più basso realmente disponibile', () => {
+  it('uses lowest level actually available', () => {
     const { player, calls } = fakePlayer(['hd720', 'medium']);
     expect(forceLowestQuality(player).level).toBe('medium');
     expect(calls.range).toEqual([['medium', 'medium']]);
   });
 
-  it('funziona anche se setPlaybackQuality non esiste', () => {
+  it('works even if setPlaybackQuality does not exist', () => {
     const player: PlayerLike = { setPlaybackQualityRange: () => undefined };
     expect(forceLowestQuality(player).applied).toBe(true);
   });
 
   it.each([
-    ['player assente', null, 'no-player'],
-    ['API assente', {}, 'no-api'],
+    ['missing player', null, 'no-player'],
+    ['missing API', {}, 'no-api'],
   ])('fail-open: %s', (_name, player, reason) => {
     const outcome = forceLowestQuality(player as PlayerLike | null);
     expect(outcome.applied).toBe(false);
     expect(outcome.reason).toBe(reason);
   });
 
-  it("fail-open se l'API lancia", () => {
+  it('fail-open if API throws', () => {
     const player: PlayerLike = {
       setPlaybackQualityRange: () => {
-        throw new Error('API cambiata');
+        throw new Error('API changed');
       },
     };
     const outcome = forceLowestQuality(player);
     expect(outcome).toEqual({ applied: false, level: null, reason: 'threw' });
   });
 
-  it('fail-open se getAvailableQualityLevels lancia', () => {
+  it('fail-open if getAvailableQualityLevels throws', () => {
     const player: PlayerLike = {
       getAvailableQualityLevels: () => {
         throw new Error('boom');
@@ -102,12 +102,12 @@ describe('findPlayer', () => {
     document.body.innerHTML = '';
   });
 
-  it('trova #movie_player', () => {
+  it('finds #movie_player', () => {
     document.body.innerHTML = '<div id="movie_player"></div>';
     expect(findPlayer(document)).not.toBeNull();
   });
 
-  it("restituisce null se non c'è", () => {
+  it('returns null if not present', () => {
     expect(findPlayer(document)).toBeNull();
   });
 });
@@ -137,7 +137,7 @@ describe('createQualityEnforcer', () => {
     return { enforcer, outcomes, controller };
   }
 
-  /** Installa un player finto nel DOM e restituisce le chiamate ricevute. */
+  /** Mounts fake player in DOM and returns received calls. */
   function mountPlayer() {
     const element = document.createElement('div');
     element.id = 'movie_player';
@@ -151,14 +151,14 @@ describe('createQualityEnforcer', () => {
     return calls;
   }
 
-  it('applica al player presente', () => {
+  it('applies to present player', () => {
     const calls = mountPlayer();
     const { enforcer } = setup(true);
     expect(enforcer.apply('test').applied).toBe(true);
     expect(calls).toEqual(['tiny']);
   });
 
-  it('★ non fa nulla se disabilitato', () => {
+  it('★ does nothing if disabled', () => {
     const calls = mountPlayer();
     const { enforcer } = setup(false);
     expect(enforcer.apply('test').reason).toBe('disabled');
@@ -166,7 +166,7 @@ describe('createQualityEnforcer', () => {
     expect(enforcer.enabled).toBe(false);
   });
 
-  it('setEnabled(true) applica subito', () => {
+  it('setEnabled(true) applies immediately', () => {
     const calls = mountPlayer();
     const { enforcer } = setup(false);
     enforcer.setEnabled(true);
@@ -174,18 +174,18 @@ describe('createQualityEnforcer', () => {
     expect(calls).toEqual(['tiny']);
   });
 
-  it('★ riapplica a ogni navigazione SPA: YouTube reimposta la qualità', () => {
+  it('★ reapplies on every SPA navigation: YouTube resets quality', () => {
     const calls = mountPlayer();
-    setup(true).enforcer.apply('avvio');
+    setup(true).enforcer.apply('startup');
     expect(calls).toHaveLength(1);
 
     window.dispatchEvent(new Event('yt-navigate-finish'));
     expect(calls).toHaveLength(2);
   });
 
-  it('★ riapplica al cambio di sorgente (playlist, autoplay)', () => {
+  it('★ reapplies on source change (playlist, autoplay)', () => {
     const calls = mountPlayer();
-    setup(true).enforcer.apply('avvio');
+    setup(true).enforcer.apply('startup');
 
     const video = document.createElement('video');
     document.body.append(video);
@@ -194,21 +194,21 @@ describe('createQualityEnforcer', () => {
     expect(calls.length).toBeGreaterThan(1);
   });
 
-  it('aspetta il player con un MutationObserver, senza polling', async () => {
+  it('waits for player with MutationObserver, without polling', async () => {
     const { enforcer, outcomes } = setup(true);
-    expect(enforcer.apply('avvio').applied).toBe(false);
+    expect(enforcer.apply('startup').applied).toBe(false);
 
     const calls = mountPlayer();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(calls).toEqual(['tiny']);
-    expect(outcomes.some((o) => o.trigger === 'player-comparso' && o.applied)).toBe(true);
+    expect(outcomes.some((o) => o.trigger === 'player-appeared' && o.applied)).toBe(true);
   });
 
-  it("★ l'abort smonta tutto: nessun listener sopravvive", () => {
+  it('★ signal abort unmounts everything: no listener survives', () => {
     const calls = mountPlayer();
     const { enforcer, controller } = setup(true);
-    enforcer.apply('avvio');
+    enforcer.apply('startup');
     calls.length = 0;
 
     controller.abort();
@@ -217,11 +217,11 @@ describe('createQualityEnforcer', () => {
     expect(calls).toEqual([]);
   });
 
-  it('non usa timer: nessun setInterval né setTimeout', () => {
+  it('does not use timers: no setInterval nor setTimeout', () => {
     const interval = vi.spyOn(globalThis, 'setInterval');
     const timeout = vi.spyOn(globalThis, 'setTimeout');
     mountPlayer();
-    setup(true).enforcer.apply('avvio');
+    setup(true).enforcer.apply('startup');
     expect(interval).not.toHaveBeenCalled();
     expect(timeout).not.toHaveBeenCalled();
     interval.mockRestore();

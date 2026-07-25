@@ -1,11 +1,11 @@
-/** PLAN.md §7 — preferenze persistenti in `storage.sync`. */
+/** PLAN.md §7 — persistent preferences in `storage.sync`. */
 
 import { browser } from 'wxt/browser';
 import type { Mode, Settings } from './types';
 
 export const DEFAULT_SETTINGS: Settings = {
   mode: 'per-tab',
-  showThumbnail: false, // default OFF: la thumbnail costa banda (RF-4)
+  showThumbnail: false, // default OFF: thumbnail costs bandwidth (RF-4)
   showPlayerButton: true,
   autoEnableOnMusic: true,
   excludedChannels: [],
@@ -17,7 +17,7 @@ function isMode(value: unknown): value is Mode {
   return value === 'off' || value === 'per-tab' || value === 'always';
 }
 
-/** Normalizza qualunque valore letto dallo storage. Mai fidarsi del disco. */
+/** Normalizes any value read from storage. Never trust disk. */
 export function normalizeSettings(raw: unknown): Settings {
   if (typeof raw !== 'object' || raw === null) return DEFAULT_SETTINGS;
   const input = raw as Record<string, unknown>;

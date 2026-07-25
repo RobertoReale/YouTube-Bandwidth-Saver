@@ -1,28 +1,28 @@
 /**
- * PLAN.md §8 — ponte ISOLATED ↔ MAIN.
+ * PLAN.md §8 — ISOLATED ↔ MAIN bridge.
  *
- * `window.postMessage` è visibile alla pagina e a qualsiasi altro script, quindi:
- *  - ogni messaggio porta un token generato per sessione;
- *  - `event.source === window` e `event.origin` sono sempre verificati;
- *  - l'insieme dei comandi è CHIUSO, mai un dispatch generico;
- *  - qui passano solo flag di configurazione, nessun dato sensibile.
+ * `window.postMessage` is visible to the page and any other script, so:
+ *  - every message carries a per-session generated token;
+ *  - `event.source === window` and `event.origin` are always verified;
+ *  - set of commands is CLOSED, never generic dispatch;
+ *  - only configuration flags pass through here, no sensitive data.
  *
- * Onestà sul modello di minaccia: il token non è un segreto verso la pagina —
- * nel MAIN world la pagina può leggere tutto ciò che teniamo in memoria. Serve a
- * escludere collisioni con altri script e forgiature casuali. La vera difesa è
- * che il comando più potente di questo canale accende o spegne l'audio-only, e
- * il MAIN world non può chiedere all'ISOLATED di eseguire `chrome.*` arbitrarie.
+ * Threat model honesty: token is not a secret from the page —
+ * in MAIN world page can read everything we hold in memory. It serves to
+ * exclude collisions with other scripts and random forging. True defense is
+ * that most powerful command on this channel turns audio-only on/off, and
+ * MAIN world cannot ask ISOLATED to execute arbitrary `chrome.*` APIs.
  */
 
 const CHANNEL = 'ytao:v1';
 
 /**
- * Il minimo che il ponte usa di `window`.
+ * Minimal interface bridge uses from `window`.
  *
- * Esiste per poter iniettare il bersaglio nei test: `event.source === window`
- * è il controllo corretto in un browser, ma negli ambienti DOM simulati il
- * `window` globale non è identico all'oggetto che finisce in `event.source`.
- * Meglio parametrizzare il bersaglio che allentare il controllo.
+ * Exists to allow injecting target in tests: `event.source === window`
+ * is correct check in a browser, but in simulated DOM environments global
+ * `window` is not identical to object ending up in `event.source`.
+ * Better to parameterize target than weaken check.
  */
 export interface BridgeTarget {
   postMessage(message: unknown, targetOrigin: string): void;
@@ -34,7 +34,7 @@ export interface BridgeTarget {
   readonly location: { readonly origin: string };
 }
 
-/** MAIN → ISOLATED. Insieme chiuso. */
+/** MAIN → ISOLATED. Closed set. */
 export type MainToIsolated =
   | { readonly kind: 'hello'; readonly token: string }
   | {
@@ -44,7 +44,7 @@ export type MainToIsolated =
     }
   | { readonly kind: 'filter-skipped'; readonly reason: string; readonly isLive: boolean };
 
-/** ISOLATED → MAIN. Insieme chiuso. */
+/** ISOLATED → MAIN. Closed set. */
 export type IsolatedToMain = { readonly kind: 'set-enabled'; readonly enabled: boolean };
 
 interface Envelope {
@@ -64,7 +64,7 @@ function post(target: BridgeTarget, token: string, payload: MainToIsolated | Iso
   target.postMessage(envelope, target.location.origin);
 }
 
-/** Tutti i controlli di provenienza in un solo punto. */
+/** All origin checks in a single place. */
 function accepts(
   target: BridgeTarget,
   event: MessageEvent,
@@ -98,9 +98,9 @@ function isKind<K extends string>(payload: unknown, kind: K): boolean {
 }
 
 /**
- * Lato MAIN. Genera il token e lo annuncia con `hello`.
- * Il token nasce nel MAIN world perché è il lato che parte prima
- * (`document_start`, prima dell'ISOLATED in alcuni percorsi).
+ * MAIN side. Generates token and announces with `hello`.
+ * Token starts in MAIN world because it runs first
+ * (`document_start`, before ISOLATED in some paths).
  */
 export function createMainBridge(
   onSetEnabled: (enabled: boolean) => void,
@@ -127,8 +127,8 @@ export function createMainBridge(
 }
 
 /**
- * Lato ISOLATED. Attende l'`hello` del MAIN world per apprendere il token,
- * poi accetta e invia solo messaggi che lo portano.
+ * ISOLATED side. Waits for MAIN world `hello` to learn token,
+ * then accepts and sends only messages carrying it.
  */
 export function createIsolatedBridge(
   onMessage: (message: MainToIsolated) => void,
@@ -145,8 +145,8 @@ export function createIsolatedBridge(
 
       const { payload } = event.data;
       if (token === null && isKind(payload, 'hello')) {
-        // Copia locale: `token` è una variabile catturata e riassegnata, e la
-        // sua restrizione di tipo non sopravvive alla chiamata a `post`.
+        // Local copy: `token` is captured and reassigned variable, and its
+        // type narrowing does not survive `post` call.
         const learned = event.data.token;
         token = learned;
         for (const message of pending.splice(0)) post(target, learned, message);

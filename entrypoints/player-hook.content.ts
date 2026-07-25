@@ -1,22 +1,22 @@
 /**
  * MAIN world, `document_start`. PLAN.md §5.
  *
- * ★ Vincolo assoluto (§11): nessun `await`, nessuna operazione asincrona prima
- *   di `installHooks`. Un solo `await` di troppo e lo script inline di YouTube
- *   ha già assegnato `ytInitialPlayerResponse`.
+ * ★ Absolute constraint (§11): no `await`, no async operation before
+ *   `installHooks`. A single extra `await` and YouTube inline script
+ *   has already assigned `ytInitialPlayerResponse`.
  *
- * Questo script non ha accesso alle `chrome.*` API. La decisione iniziale arriva
- * dalla cache sincrona (`lib/sync-cache.ts`), poi viene corretta dall'ISOLATED
- * world via ponte.
+ * This script has no access to `chrome.*` APIs. Initial decision comes
+ * from synchronous cache (`lib/sync-cache.ts`), then gets corrected by ISOLATED
+ * world via bridge.
  *
- * Due meccanismi, in ordine di preferenza:
+ * Two mechanisms, in order of preference:
  *
- *  1. **Qualità minima forzata** (piano C, `quality.ts`) — la via principale da
- *     quando YouTube usa SABR: il server decide i byte, quindi l'unica leva è
- *     chiedergli la qualità più bassa. Riduce la banda, non la azzera.
- *  2. **Filtro dei formati** (`format-filter.ts`) — resta installato come
- *     fallback per i client che ricevono ancora tracce con URL diretti, dove
- *     azzera davvero i byte video. Rinuncia da sé se vede SABR.
+ *  1. **Forced minimal quality** (plan C, `quality.ts`) — main mechanism since
+ *     YouTube uses SABR: server decides bytes, so the only lever is
+ *     asking for the lowest quality. Reduces bandwidth, does not zero it out.
+ *  2. **Format filter** (`format-filter.ts`) — remains installed as a
+ *     fallback for clients still receiving direct track URLs, where
+ *     it truly zeroes out video bytes. Disables itself if it sees SABR.
  */
 
 import { createMainBridge, type MainToIsolated } from '../lib/bridge';
@@ -34,15 +34,15 @@ export default defineContentScript({
   allFrames: true,
 
   main(): void {
-    // 1. Decisione sincrona. Default `false`: senza informazione, YouTube normale.
+    // 1. Synchronous decision. Default `false`: without info, normal YouTube.
     let enabled = readCachedDecision();
 
-    /** Vita di tutti i listener e observer di questo frame (§11). */
+    /** Lifetime of all listeners and observers in this frame (§11). */
     const lifetime = new AbortController();
 
-    // Diagnostica: esiste SOLO nelle build di sviluppo. `import.meta.env.DEV` è
-    // una costante sostituita da Vite, quindi in produzione questo blocco e
-    // l'array che alimenta vengono eliminati dal tree-shaking.
+    // Diagnostics: exists ONLY in development builds. `import.meta.env.DEV` is
+    // replaced by Vite, so in production this block and the array feeding it
+    // are eliminated by tree-shaking.
     const trace: unknown[] = [];
     if (import.meta.env.DEV) {
       Object.defineProperty(window, '__ytAudioOnlyDebug', {
@@ -51,13 +51,13 @@ export default defineContentScript({
       });
     }
 
-    // 2. Coda per i report emessi prima che il ponte sia pronto.
+    // 2. Queue for reports emitted before bridge is ready.
     const pending: MainToIsolated[] = [];
     let send: (message: MainToIsolated) => void = (message) => {
       pending.push(message);
     };
 
-    // 3. Hook installati SUBITO, sincronamente.
+    // 3. Hooks installed IMMEDIATELY, synchronously.
     installHooks({
       transform(input, source) {
         if (!enabled) {
@@ -75,7 +75,7 @@ export default defineContentScript({
             stats: result.stats,
             videoId: result.videoId,
             violations: result.violations,
-            // Che cosa è rimasto davvero nel response consegnato al player.
+            // What was actually left in response delivered to player.
             keptMimeTypes: mimeTypesOf(result.response),
           });
         }
@@ -88,7 +88,7 @@ export default defineContentScript({
             bytesSaved: result.stats.estimatedBytesSaved,
           });
         } else if (result.reason !== undefined) {
-          logger.debug(`${source} saltato: ${result.reason}`);
+          logger.debug(`${source} skipped: ${result.reason}`);
           send({ kind: 'filter-skipped', reason: result.reason, isLive: result.isLive });
         }
 
@@ -96,10 +96,9 @@ export default defineContentScript({
       },
     });
 
-    // 4. Ponte con l'ISOLATED world, che possiede la verità sullo stato.
-    //    L'enforcer nasce dopo il ponte, e il ponte deve poterlo avvisare: questo
-    //    gancio evita di invertire l'ordine, che è vincolato — gli hook devono
-    //    restare la prima cosa che accade.
+    // 4. Bridge with ISOLATED world holding true state.
+    //    Enforcer is created after bridge, and bridge must be able to notify it:
+    //    this hook avoids order inversion — hooks must remain the first thing that runs.
     let onEnabledChange: (next: boolean) => void = () => {};
     const bridge = createMainBridge((next) => {
       enabled = next;
@@ -109,9 +108,9 @@ export default defineContentScript({
     send = bridge.send;
     for (const message of pending.splice(0)) send(message);
 
-    // 5. Piano C: forzatura della qualità minima. Va dopo gli hook perché non
-    //    ha vincoli di tempo — il player non esiste ancora a `document_start`,
-    //    e l'enforcer lo aspetta con un observer che si spegne appena lo trova.
+    // 5. Plan C: forcing minimal quality. Placed after hooks because it has
+    //    no timing constraints — player doesn't exist yet at `document_start`,
+    //    and enforcer waits for it with an observer that turns off once found.
     const enforcer = createQualityEnforcer(
       {
         root: document,
@@ -119,21 +118,21 @@ export default defineContentScript({
         signal: lifetime.signal,
         navigationEvents: [YT_EVENTS.navigateFinish],
         onOutcome: (outcome, trigger) => {
-          logger.debug(`qualità (${trigger}):`, outcome);
+          logger.debug(`quality (${trigger}):`, outcome);
           if (import.meta.env.DEV) trace.push({ source: 'quality', trigger, ...outcome });
         },
       },
       enabled,
     );
 
-    enforcer.apply('avvio');
+    enforcer.apply('startup');
     onEnabledChange = (next) => enforcer.setEnabled(next);
 
     window.addEventListener('pagehide', () => lifetime.abort(), { signal: lifetime.signal });
   },
 });
 
-/** Solo per la diagnostica di sviluppo: elenca i mimeType sopravvissuti. */
+/** Only for dev diagnostics: list surviving mimeTypes. */
 function mimeTypesOf(response: unknown): { adaptive: unknown[]; progressive: unknown[] } {
   const streamingData = (response as { streamingData?: Record<string, unknown> } | null)
     ?.streamingData;

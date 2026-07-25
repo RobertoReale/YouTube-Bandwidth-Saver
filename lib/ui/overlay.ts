@@ -10,7 +10,7 @@ export interface Overlay {
 }
 
 /**
- * RF-4: Overlay visivo per coprire lo stream a 144p.
+ * RF-4: Visual overlay to cover the 144p stream.
  */
 export function createOverlay(options: OverlayOptions): Overlay {
   let overlayEl: HTMLDivElement | null = null;
@@ -21,7 +21,7 @@ export function createOverlay(options: OverlayOptions): Overlay {
   const injectOverlay = (): void => {
     if (options.signal.aborted) return;
 
-    // Troviamo il container del video
+    // Find video container
     let videoContainer: Element | null = null;
     for (const selector of DOM.moviePlayer) {
       videoContainer = options.root.querySelector(selector);
@@ -37,11 +37,11 @@ export function createOverlay(options: OverlayOptions): Overlay {
         <div class="yt-bandwidth-saver-bg"></div>
         <div class="yt-bandwidth-saver-content">
           <div class="yt-bandwidth-saver-icon"></div>
-          <div class="yt-bandwidth-saver-text">Bandwidth Saver Attivo</div>
+          <div class="yt-bandwidth-saver-text">Bandwidth Saver Active</div>
         </div>
       `;
-      // Inseriamo l'overlay all'interno del player, dietro ai controlli nativi.
-      // Un buon punto è prima del contenitore dei controlli.
+      // Insert overlay inside player, behind native controls.
+      // A good place is before controls container.
       videoContainer.appendChild(overlayEl);
     }
 
@@ -62,11 +62,11 @@ export function createOverlay(options: OverlayOptions): Overlay {
     const text = overlayEl.querySelector('.yt-bandwidth-saver-text') as HTMLDivElement;
 
     if (currentIsLive) {
-      text.textContent = 'Risparmio Banda non disponibile sulle dirette';
+      text.textContent = 'Bandwidth Saver unavailable on live streams';
       bg.style.backgroundImage = 'none';
       bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
     } else {
-      text.textContent = 'Bandwidth Saver Attivo';
+      text.textContent = 'Bandwidth Saver Active';
       if (currentThumbnail) {
         bg.style.backgroundImage = `url("${currentThumbnail}")`;
       } else {

@@ -1,15 +1,15 @@
 import { defineConfig } from 'wxt';
 
 /**
- * PLAN.md §13 — permessi al minimo.
+ * PLAN.md §13 — minimal permissions.
  *
- * Deliberatamente NON chiediamo:
- *  - `tabs`       → host_permissions su youtube.com ci dà già `tab.url` per
- *                   quegli host, che è tutto ciò che ci serve.
- *  - `activeTab`  → `action.onClicked` consegna già la tab nel callback.
- *  - `scripting`  → i content script sono dichiarativi, nessuna injection.
- *  - `webRequest` → bug #9 dell'originale: dichiarato e mai usato.
- *  - `*://*.googlevideo.com/*` → non facciamo NESSUNA richiesta di rete.
+ * Deliberately NOT asking for:
+ *  - `tabs`       → host_permissions on youtube.com already gives `tab.url` for
+ *                   those hosts, which is all we need.
+ *  - `activeTab`  → `action.onClicked` already delivers tab in callback.
+ *  - `scripting`  → content scripts are declarative, no injection.
+ *  - `webRequest` → original bug #9: declared and never used.
+ *  - `*://*.googlevideo.com/*` → we make NO network requests.
  */
 export default defineConfig({
   srcDir: '.',
@@ -27,7 +27,7 @@ export default defineConfig({
     commands: {
       'toggle-audio-only': {
         suggested_key: { default: 'Alt+A' },
-        description: 'Attiva/disattiva il risparmio banda nella scheda corrente',
+        description: 'Toggle bandwidth saver in current tab',
       },
     },
     browser_specific_settings: {

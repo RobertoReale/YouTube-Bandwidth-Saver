@@ -1,8 +1,8 @@
-/** PLAN.md §7 — modello di stato. Tipi condivisi fra i tre mondi. */
+/** PLAN.md §7 — state model. Shared types across all three worlds. */
 
 export type Mode = 'off' | 'per-tab' | 'always';
 
-/** Preferenze persistenti (`storage.sync`). */
+/** Persistent preferences (`storage.sync`). */
 export interface Settings {
   mode: Mode;
   showThumbnail: boolean;
@@ -11,17 +11,17 @@ export interface Settings {
   excludedChannels: readonly string[];
 }
 
-/** Stato volatile per-scheda (`storage.session`, non tocca il disco). */
+/** Volatile per-tab state (`storage.session`, does not touch disk). */
 export interface TabState {
   enabled: boolean;
   videoId: string | null;
   isLive: boolean;
-  /** Stima locale, MAI trasmessa (§13). */
+  /** Local estimate, NEVER transmitted (§13). */
   bytesSaved: number;
   lastAppliedAt: number;
 }
 
-/** Perché il filtro non è stato applicato. Fail-open, mai un'eccezione. */
+/** Why the filter was not applied. Fail-open, never throw. */
 export type SkipReason =
   | 'not-a-player-response'
   | 'live-stream'
@@ -29,7 +29,7 @@ export type SkipReason =
   | 'no-video-formats'
   | 'no-audio-formats'
   | 'drm-protected'
-  /** SABR: il server decide lo stream, i formati sono metadati. Vedi R1. */
+  /** SABR: server decides stream, formats are metadata. See R1. */
   | 'server-abr'
   | 'disabled'
   | 'internal-error';
@@ -39,20 +39,20 @@ export interface FilterStats {
   progressiveFormatsRemoved: number;
   audioFormatsKept: number;
   unknownFormatsKept: number;
-  /** Somma dei `contentLength` rimossi. Stima, va etichettata come tale nella UI. */
+  /** Sum of removed `contentLength`. Estimate, labeled as such in UI. */
   estimatedBytesSaved: number;
 }
 
 /**
- * Uno scostamento fra lo schema atteso e quello osservato.
- * Alimenta il contatore LOCALE di §12. Non lascia mai il dispositivo.
+ * Discrepancy between expected schema and observed schema.
+ * Feeds LOCAL counter in §12. Never leaves device.
  */
 export interface SchemaViolation {
-  /** Percorso del campo, es. `streamingData.adaptiveFormats`. */
+  /** Field path, e.g. `streamingData.adaptiveFormats`. */
   path: string;
-  /** Cosa ci aspettavamo. */
+  /** What was expected. */
   expected: string;
-  /** Cosa abbiamo trovato (solo il tipo o un enum, MAI il valore: privacy). */
+  /** What was found (only type or enum, NEVER value: privacy). */
   found: string;
   at: number;
 }

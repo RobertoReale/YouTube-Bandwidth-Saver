@@ -15,34 +15,34 @@ describe('resolveEnabled', () => {
   const watch = 'https://www.youtube.com/watch?v=abc';
   const music = 'https://music.youtube.com/watch?v=abc';
 
-  it('modalità off: mai attiva, nemmeno se la scheda era accesa', () => {
+  it('off mode: never active, even if tab was enabled', () => {
     expect(
       resolveEnabled('off', tabState({ enabled: true }), settings({ mode: 'off' }), watch),
     ).toBe(false);
   });
 
-  it('modalità always: sempre attiva', () => {
+  it('always mode: always active', () => {
     expect(resolveEnabled('always', tabState(), settings({ mode: 'always' }), watch)).toBe(true);
   });
 
-  it('★ modalità per-tab: indipendente per scheda (issue #3)', () => {
+  it('★ per-tab mode: independent per tab (issue #3)', () => {
     const config = settings({ mode: 'per-tab', autoEnableOnMusic: false });
     expect(resolveEnabled('per-tab', tabState({ enabled: true }), config, watch)).toBe(true);
     expect(resolveEnabled('per-tab', tabState({ enabled: false }), config, watch)).toBe(false);
   });
 
-  it('per-tab su YouTube Music: attiva se autoEnableOnMusic', () => {
+  it('per-tab on YouTube Music: active if autoEnableOnMusic', () => {
     const config = settings({ mode: 'per-tab', autoEnableOnMusic: true });
     expect(resolveEnabled('per-tab', tabState(), config, music)).toBe(true);
     expect(resolveEnabled('per-tab', tabState(), config, watch)).toBe(false);
   });
 
-  it('autoEnableOnMusic disattivato non altera la decisione per-scheda', () => {
+  it('disabled autoEnableOnMusic does not alter per-tab decision', () => {
     const config = settings({ mode: 'per-tab', autoEnableOnMusic: false });
     expect(resolveEnabled('per-tab', tabState(), config, music)).toBe(false);
   });
 
-  it('un url assente non manda in errore', () => {
+  it('a missing url does not throw an error', () => {
     expect(resolveEnabled('per-tab', tabState(), settings(), undefined)).toBe(false);
   });
 });
@@ -51,8 +51,8 @@ describe('isMusicUrl', () => {
   it.each([
     ['https://music.youtube.com/watch?v=x', true],
     ['https://www.youtube.com/watch?v=x', false],
-    ['non-un-url', false],
-    // Non si fa matching su sottostringhe: un host ostile non ci inganna.
+    ['not-a-url', false],
+    // Substring matching is avoided: hostile host cannot trick us.
     ['https://music.youtube.com.example.invalid/', false],
   ])('%s → %s', (url, expected) => {
     expect(isMusicUrl(url)).toBe(expected);
@@ -64,10 +64,10 @@ describe('isMusicUrl', () => {
 });
 
 describe('normalizeSettings', () => {
-  it('non si fida del disco: ogni campo di tipo errato torna al default', () => {
+  it('does not trust disk: any wrong type field reverts to default', () => {
     const result = normalizeSettings({
-      mode: 'modalità-inventata',
-      showThumbnail: 'si',
+      mode: 'made-up-mode',
+      showThumbnail: 'yes',
       showPlayerButton: 0,
       autoEnableOnMusic: null,
       excludedChannels: ['ok', 42, null],
@@ -82,14 +82,14 @@ describe('normalizeSettings', () => {
 
   it.each([
     ['null', null],
-    ['stringa', 'x'],
-    ['numero', 1],
+    ['string', 'x'],
+    ['number', 1],
     ['undefined', undefined],
-  ])('%s → default completi', (_name, input) => {
+  ])('%s → complete defaults', (_name, input) => {
     expect(normalizeSettings(input)).toEqual(DEFAULT_SETTINGS);
   });
 
-  it('preserva i valori validi', () => {
+  it('preserves valid values', () => {
     expect(normalizeSettings({ mode: 'always', showThumbnail: true }).mode).toBe('always');
     expect(normalizeSettings({ mode: 'off' }).mode).toBe('off');
     expect(normalizeSettings({ showThumbnail: true }).showThumbnail).toBe(true);
@@ -97,7 +97,7 @@ describe('normalizeSettings', () => {
     expect(normalizeSettings({ autoEnableOnMusic: false }).autoEnableOnMusic).toBe(false);
   });
 
-  it('il default di showThumbnail è OFF: la thumbnail costa banda', () => {
+  it('default of showThumbnail is OFF: thumbnail costs bandwidth', () => {
     expect(DEFAULT_SETTINGS.showThumbnail).toBe(false);
   });
 });

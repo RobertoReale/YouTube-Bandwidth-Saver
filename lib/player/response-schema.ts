@@ -1,21 +1,21 @@
 /**
- * PLAN.md §6 — parsing difensivo del player response.
+ * PLAN.md §6 — defensive parsing of player response.
  *
- * Nessun accesso diretto tipo `response.streamingData.adaptiveFormats`: ogni
- * lettura passa da qui. In caso di forma inattesa registriamo una
- * `SchemaViolation` e il chiamante fa `applied: false` (fail-open).
+ * No direct access like `response.streamingData.adaptiveFormats`: every
+ * read goes through here. In case of unexpected shape we record a
+ * `SchemaViolation` and caller sets `applied: false` (fail-open).
  *
- * Type guard scritti a mano, zero dipendenze runtime: lo schema da validare è
- * piccolo e il budget del MAIN world è 15 KB (§11, §13). Vedi RESEARCH.md R8.
+ * Handwritten type guards, zero runtime dependencies: schema to validate is
+ * small and MAIN world budget is 15 KB (§11, §13). See RESEARCH.md R8.
  */
 
 import { FIELDS } from '../selectors';
 import type { SchemaViolation } from '../types';
 
 /**
- * Una traccia. Tutti i campi sono opzionali: non ci fidiamo di nulla.
- * Solo i campi che leggiamo davvero sono dichiarati; il resto passa intatto
- * grazie a `[key: string]: unknown`.
+ * A track. All fields are optional: we trust nothing.
+ * Only fields we actually read are declared; rest passes untouched
+ * thanks to `[key: string]: unknown`.
  */
 export interface RawFormat {
   readonly itag?: unknown;
@@ -32,18 +32,18 @@ export interface RawFormat {
   readonly [key: string]: unknown;
 }
 
-/** Vista validata e di sola lettura su un player response. */
+/** Validated read-only view of a player response. */
 export interface PlayerResponseView {
   readonly root: Readonly<Record<string, unknown>>;
   readonly streamingData: Readonly<Record<string, unknown>>;
-  /** `undefined` se il campo manca; array vuoto se c'era ma vuoto. */
+  /** `undefined` if field is missing; empty array if present but empty. */
   readonly adaptiveFormats: readonly RawFormat[] | undefined;
   readonly formats: readonly RawFormat[] | undefined;
   readonly isLive: boolean;
   readonly hasDrm: boolean;
   /**
-   * SABR attivo: il server decide quali byte mandare e i formati sono solo
-   * metadati. Filtrarli non risparmia nulla e rompe la riproduzione.
+   * SABR active: server decides which bytes to send and formats are metadata
+   * only. Filtering them saves nothing and breaks playback.
    */
   readonly hasServerAbr: boolean;
   readonly videoId: string | undefined;
@@ -65,7 +65,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Descrive il tipo di un valore senza rivelarne il contenuto (privacy, §13). */
+/** Describes value type without revealing content (privacy, §13). */
 export function describeType(value: unknown): string {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
@@ -76,7 +76,7 @@ function violation(path: string, expected: string, found: unknown): SchemaViolat
   return { path, expected, found: describeType(found), at: Date.now() };
 }
 
-/** Legge un array di tracce. Restituisce `undefined` se il campo manca. */
+/** Reads format array. Returns `undefined` if field is missing. */
 function readFormats(
   streamingData: Record<string, unknown>,
   field: string,
@@ -88,8 +88,8 @@ function readFormats(
     violations.push(violation(`streamingData.${field}`, 'array', raw));
     return undefined;
   }
-  // Le voci non-oggetto vengono scartate dalla vista ma registrate: se YouTube
-  // cambiasse la forma delle tracce, lo vedremmo qui prima che rompa il filtro.
+  // Non-object entries discarded from view but logged: if YouTube
+  // changes track shape, we will see it here before it breaks filter.
   const out: RawFormat[] = [];
   for (const entry of raw) {
     if (isRecord(entry)) {
@@ -109,7 +109,7 @@ function readIsLive(
   if (isRecord(details)) {
     if (details.isLive === true || details.isLiveContent === true) return true;
   }
-  // I live consegnano un manifest, non `adaptiveFormats` filtrabili (RF-5).
+  // Live streams deliver a manifest, not filterable `adaptiveFormats` (RF-5).
   return (
     typeof streamingData[FIELDS.hlsManifestUrl] === 'string' ||
     typeof streamingData[FIELDS.dashManifestUrl] === 'string'
@@ -138,8 +138,8 @@ function readVideoId(root: Record<string, unknown>): string | undefined {
 }
 
 /**
- * Valida un valore sconosciuto come player response.
- * Non lancia mai: ogni percorso di errore ha un `reason`.
+ * Validates unknown value as player response.
+ * Never throws: every error path returns a `reason`.
  */
 export function parsePlayerResponse(input: unknown): ParseResult {
   const violations: SchemaViolation[] = [];
@@ -150,8 +150,8 @@ export function parsePlayerResponse(input: unknown): ParseResult {
 
   const streamingDataRaw = input[FIELDS.streamingData];
   if (streamingDataRaw === undefined) {
-    // Caso legittimo e frequente: pagine non-video, risposte di errore.
-    // Non è una violazione di schema.
+    // Legitimate and frequent case: non-video pages, error responses.
+    // Not a schema violation.
     return { ok: false, reason: 'no-streaming-data', violations };
   }
   if (!isRecord(streamingDataRaw)) {
@@ -179,8 +179,8 @@ export function parsePlayerResponse(input: unknown): ParseResult {
 }
 
 /**
- * Euristica veloce: vale la pena fare `JSON.parse` di questo testo?
- * Evita di parsare megabyte di risposte che non c'entrano nulla.
+ * Fast heuristic: is it worth running `JSON.parse` on this text?
+ * Avoids parsing megabytes of unrelated responses.
  */
 export function looksLikePlayerResponseText(text: string): boolean {
   return text.includes(FIELDS.adaptiveFormats) || text.includes(FIELDS.formats);

@@ -1,36 +1,36 @@
-# Istruzioni di Build (Riproducibile)
+# Build Instructions (Reproducible Build)
 
-Per garantire la trasparenza e la sicurezza del codice caricato sui web store, ecco le istruzioni esatte per generare un pacchetto (`.zip`) identico a quello pubblicato.
+To guarantee transparency and security for extension store listings, here are the exact steps to generate package zips (`.zip`) identical to published releases.
 
-## Requisiti
+## Requirements
 
 - Node.js >= 20
 - pnpm >= 8.0.0
 
-## Procedura
+## Steps
 
-1. Clona il repository:
+1. Clone repository:
    ```bash
-   git clone https://github.com/TuoNome/yt-bandwidth-saver.git
-   cd yt-bandwidth-saver
+   git clone https://github.com/RobertoReale/YouTube-Bandwidth-Saver.git
+   cd YouTube-Bandwidth-Saver
    ```
 
-2. Installa le dipendenze:
+2. Install dependencies:
    ```bash
    pnpm install
    ```
 
-3. Crea il pacchetto per Chrome/Edge:
+3. Create package for Chrome/Edge:
    ```bash
    pnpm zip
    ```
-   *Il file risultante si troverà in `.output/yt-bandwidth-saver-chrome.zip`.*
+   *The output package will be located at `.output/YouTube-Bandwidth-Saver-chrome.zip`.*
 
-4. Crea il pacchetto per Firefox:
+4. Create package for Firefox:
    ```bash
    pnpm zip -b firefox
    ```
-   *Il file risultante si troverà in `.output/yt-bandwidth-saver-firefox.zip`.*
+   *The output package will be located at `.output/YouTube-Bandwidth-Saver-firefox.zip`.*
 
-## Verifica dell'Integrità
-Poiché l'estensione utilizza WXT, il codice sorgente viene compilato e parzialmente minificato per questioni di performance. L'intero codice sorgente originale in TypeScript è comunque verificabile direttamente dal repository GitHub alla commit corrispondente alla versione rilasciata.
+## Integrity Verification
+Because the extension uses WXT, source code is compiled and bundled for optimal performance. The complete original TypeScript source code is fully inspectable in this GitHub repository at the commit tag matching each release version.

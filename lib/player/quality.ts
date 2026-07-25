@@ -1,23 +1,23 @@
 /**
- * Piano C del rischio A (`PLAN.md` §15): forzare la qualità minima.
+ * Plan C of Risk A (`PLAN.md` §15): forcing minimal quality.
  *
- * Perché non filtriamo più i formati: dal 2026-07-25 YouTube consegna
- * `serverAbrStreamingUrl` e nessun URL diretto sulle tracce (RESEARCH.md R1).
- * È il server a decidere quali byte mandare, quindi l'unica leva che il client
- * ha davvero è **dire al server che vuole la qualità più bassa**.
+ * Why we no longer filter formats: as of 2026-07-25 YouTube delivers
+ * `serverAbrStreamingUrl` and no direct URLs on tracks (RESEARCH.md R1).
+ * Server decides which bytes to send, so the only lever client
+ * really has is **telling server it wants the lowest quality**.
  *
- * Onestà sul risultato: questo NON azzera i byte video, li riduce. È la
- * differenza fra il piano C e il piano D, e va detta anche nella UI e nella
- * scheda dello store (`PUBLISHING.md`: niente numeri non misurati).
+ * Honesty on result: this does NOT zero out video bytes, it reduces them. It is the
+ * difference between plan C and plan D, and must be stated in UI and
+ * store listing (`PUBLISHING.md`: no unmeasured numbers).
  *
- * Regole rispettate: nessun polling (`PLAN.md` §11), ogni listener e observer
- * ha il suo teardown, e qualunque errore è fail-open — se l'API del player
- * cambia, YouTube continua a funzionare normalmente.
+ * Rules respected: no polling (`PLAN.md` §11), every listener and observer
+ * has its teardown, and any error is fail-open — if player API
+ * changes, YouTube continues operating normally.
  */
 
 import { DOM, QUALITY_LEVELS, type QualityLevel } from '../selectors';
 
-/** Il sottoinsieme dell'API del player YouTube che usiamo. Tutto opzionale. */
+/** Subset of YouTube player API we use. All optional. */
 export interface PlayerLike {
   setPlaybackQualityRange?: (min: string, max: string) => void;
   setPlaybackQuality?: (quality: string) => void;
@@ -32,11 +32,11 @@ export interface QualityOutcome {
 }
 
 /**
- * Scegli il livello più leggero fra quelli che il player dichiara disponibili.
+ * Picks lightest quality level from those declared available by player.
  *
- * Non usiamo `tiny` a occhi chiusi: se un video non ha una traccia 144p,
- * chiedere `tiny` può essere ignorato. Preferiamo il più basso realmente
- * offerto, e ripieghiamo su `tiny` solo se l'elenco è illeggibile.
+ * We don't blindly use `tiny`: if a video has no 144p track,
+ * requesting `tiny` might be ignored. We prefer the lowest actually
+ * offered, falling back to `tiny` only if list is unreadable.
  */
 export function pickLowestQuality(available: unknown): QualityLevel {
   if (!Array.isArray(available)) return 'tiny';
@@ -47,23 +47,23 @@ export function pickLowestQuality(available: unknown): QualityLevel {
   return 'tiny';
 }
 
-/** Trova l'elemento del player, provando la catena di fallback dei selettori. */
+/** Finds player element, trying selector fallback chain. */
 export function findPlayer(root: ParentNode): PlayerLike | null {
   for (const selector of DOM.moviePlayer) {
     const element = root.querySelector(selector);
-    // L'elemento `#movie_player` di YouTube porta i metodi dell'API su di sé.
+    // YouTube's `#movie_player` element carries API methods on itself.
     if (element !== null) return element as unknown as PlayerLike;
   }
   return null;
 }
 
 /**
- * Impone la qualità minima a un player. Non lancia mai.
+ * Forces minimal quality on a player. Never throws.
  *
- * Chiamiamo `setPlaybackQualityRange` **e** `setPlaybackQuality`: la prima fissa
- * un tetto che impedisce all'ABR di risalire durante la riproduzione, la seconda
- * applica il cambio subito. Da sola, la seconda verrebbe scavalcata al primo
- * aggiustamento automatico.
+ * We call `setPlaybackQualityRange` **and** `setPlaybackQuality`: first sets
+ * a ceiling preventing ABR from going up during playback, second
+ * applies change immediately. Alone, second would be overridden on first
+ * automatic adjustment.
  */
 export function forceLowestQuality(player: PlayerLike | null): QualityOutcome {
   if (player === null) return { applied: false, level: null, reason: 'no-player' };
@@ -82,31 +82,31 @@ export function forceLowestQuality(player: PlayerLike | null): QualityOutcome {
 }
 
 export interface EnforcerDeps {
-  /** Documento su cui cercare player ed elemento video. */
+  /** Document on which to search for player and video element. */
   readonly root: Document;
-  /** Bersaglio degli eventi di navigazione SPA. Iniettabile per i test. */
+  /** Target for SPA navigation events. Injectable for tests. */
   readonly events: Pick<EventTarget, 'addEventListener'>;
   readonly signal: AbortSignal;
-  /** Nomi degli eventi YouTube che indicano "il player è cambiato". */
+  /** YouTube event names indicating "player has changed". */
   readonly navigationEvents: readonly string[];
   readonly onOutcome?: (outcome: QualityOutcome, trigger: string) => void;
 }
 
 export interface QualityEnforcer {
-  /** Applica subito, se possibile. Restituisce l'esito. */
+  /** Applies immediately, if possible. Returns outcome. */
   apply(trigger: string): QualityOutcome;
-  /** Attiva o disattiva senza smontare i listener. */
+  /** Enables or disables without unmounting listeners. */
   setEnabled(enabled: boolean): void;
   readonly enabled: boolean;
 }
 
 /**
- * Riapplica la qualità minima ogni volta che il player può averla reimpostata:
- * a ogni navigazione SPA e a ogni nuovo media caricato.
+ * Reapplies minimal quality whenever player might have reset it:
+ * on every SPA navigation and on every new media loaded.
  *
- * YouTube reimposta la qualità a ogni video — è il motivo per cui una singola
- * chiamata all'avvio non basta e il piano lo annotava già (§2, "YouTube
- * reimposta la qualità a ogni video").
+ * YouTube resets quality on every video — reason why a single
+ * startup call is not enough, as plan already noted (§2, "YouTube
+ * resets quality on every video").
  */
 export function createQualityEnforcer(
   deps: EnforcerDeps,
@@ -124,8 +124,8 @@ export function createQualityEnforcer(
   };
 
   /**
-   * Il player non esiste ancora: lo aspettiamo con un observer che si spegne
-   * appena lo trova. Nessun `setInterval` (§11).
+   * Player doesn't exist yet: we wait for it with an observer that turns off
+   * as soon as found. No `setInterval` (§11).
    */
   const waitForPlayer = (): void => {
     if (observer !== null || deps.signal.aborted) return;
@@ -133,7 +133,7 @@ export function createQualityEnforcer(
       if (findPlayer(deps.root) === null) return;
       observer?.disconnect();
       observer = null;
-      apply('player-comparso');
+      apply('player-appeared');
     });
     observer.observe(deps.root.documentElement, { childList: true, subtree: true });
     deps.signal.addEventListener('abort', () => {
@@ -146,9 +146,9 @@ export function createQualityEnforcer(
     deps.events.addEventListener(eventName, () => apply(eventName), { signal: deps.signal });
   }
 
-  // `loadstart` sull'elemento video cattura anche i cambi di sorgente che non
-  // passano da una navigazione (playlist, autoplay). In fase di cattura, così
-  // non serve riagganciarsi quando l'elemento viene sostituito.
+  // `loadstart` on video element also catches source changes not going
+  // through navigation (playlist, autoplay). In capture phase, so
+  // no need to re-attach when element is replaced.
   deps.root.addEventListener('loadstart', () => apply('loadstart'), {
     capture: true,
     signal: deps.signal,
@@ -158,7 +158,7 @@ export function createQualityEnforcer(
     apply,
     setEnabled(next: boolean): void {
       enabled = next;
-      if (next) apply('abilitata');
+      if (next) apply('enabled');
     },
     get enabled(): boolean {
       return enabled;

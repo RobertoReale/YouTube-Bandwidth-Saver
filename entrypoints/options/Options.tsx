@@ -11,7 +11,7 @@ export function Options() {
   }, []);
 
   if (!settings) {
-    return <div class="loading">Caricamento impostazioni...</div>;
+    return <div class="loading">Loading settings...</div>;
   }
 
   const updateSetting = async (key: keyof Settings, value: boolean) => {
@@ -26,15 +26,15 @@ export function Options() {
     <div class="options-container">
       <header class="header">
         <h1>YouTube Bandwidth Saver</h1>
-        <p class="subtitle">Impostazioni avanzate</p>
+        <p class="subtitle">Advanced settings</p>
       </header>
 
       <section class="settings-group">
         <label class="setting-item">
           <div class="setting-info">
-            <span class="setting-title">Pulsante nel player</span>
+            <span class="setting-title">In-player button</span>
             <span class="setting-desc">
-              Mostra il pulsante di attivazione rapida direttamente nel player di YouTube.
+              Show quick toggle button directly inside the YouTube player.
             </span>
           </div>
           <div class="setting-control">
@@ -51,9 +51,9 @@ export function Options() {
 
         <label class="setting-item">
           <div class="setting-info">
-            <span class="setting-title">Miniatura in background</span>
+            <span class="setting-title">Background thumbnail</span>
             <span class="setting-desc">
-              Mostra la copertina del video sfocata sullo sfondo (consuma ~50 KB di dati extra).
+              Show blurred video thumbnail in background (uses ~50 KB extra data).
             </span>
           </div>
           <div class="setting-control">
@@ -70,9 +70,9 @@ export function Options() {
 
         <label class="setting-item">
           <div class="setting-info">
-            <span class="setting-title">Attiva automaticamente su YouTube Music</span>
+            <span class="setting-title">Auto-enable on YouTube Music</span>
             <span class="setting-desc">
-              Considera YouTube Music come sempre attivo per risparmiare banda.
+              Treat YouTube Music as always active to save bandwidth.
             </span>
           </div>
           <div class="setting-control">
@@ -89,7 +89,7 @@ export function Options() {
       </section>
 
       <footer class="footer">
-        <div class={`save-toast ${saved ? 'visible' : ''}`}>Modifiche salvate automaticamente</div>
+        <div class={`save-toast ${saved ? 'visible' : ''}`}>Settings saved automatically</div>
       </footer>
     </div>
   );

@@ -1,13 +1,13 @@
 /**
  * ISOLATED world. PLAN.md §5.
  *
- * Ha accesso alle `chrome.*` API ma non alle variabili di pagina. Fa tre cose:
- *  1. chiede al service worker lo stato risolto per questa scheda;
- *  2. lo comunica al MAIN world e lo scrive nella cache sincrona, così il
- *     prossimo `document_start` di questa scheda decide senza attendere;
- *  3. riporta al worker le statistiche che il MAIN world gli manda.
+ * Has access to `chrome.*` APIs but not page variables. Performs three tasks:
+ *  1. requests resolved state for this tab from service worker;
+ *  2. communicates it to MAIN world and writes to synchronous cache, so next
+ *     `document_start` for this tab decides without waiting;
+ *  3. reports stats back to worker that MAIN world sends it.
  *
- * La UI nel player (RF-3) e l'overlay (RF-4) sono Fase 2.
+ * Player UI (RF-3) and overlay (RF-4) are Phase 2.
  */
 
 import { createIsolatedBridge } from '../lib/bridge';
@@ -29,7 +29,7 @@ export default defineContentScript({
     const controller = new AbortController();
     const { signal } = controller;
 
-    /** Con quale decisione il MAIN world ha effettivamente avviato la pagina. */
+    /** With which decision MAIN world actually started the page. */
     const loadedWith = readCachedDecision();
 
     const currentThumbnail = '';
@@ -54,7 +54,7 @@ export default defineContentScript({
           break;
         case 'filter-applied':
           currentIsLive = false;
-          // Se arriva thumbnail usiamola, ma in Piano C SABR potrebbe mancare, aggiorniamo l'overlay
+          // If thumbnail arrives use it, but in Plan C SABR it might be missing; update overlay
           overlay.updateState(readCachedDecision(), currentIsLive, currentThumbnail);
           void sendMessage({
             type: 'REPORT_STATS',
@@ -76,10 +76,9 @@ export default defineContentScript({
       playerButton.updateState(enabled);
       overlay.updateState(enabled, currentIsLive, currentThumbnail);
 
-      // Il MAIN world ha già deciso a `document_start`. Se la decisione è
-      // cambiata, il player ha già negoziato lo stream sbagliato: serve un
-      // ricaricamento. È il fallback documentato del rischio E; il toggle
-      // senza reload è Fase 2 (`applyModeChange`).
+      // MAIN world already decided at `document_start`. If decision
+      // changed, player already negotiated wrong stream: reload needed.
+      // Documented fallback for Risk E; toggle without reload is Phase 2 (`applyModeChange`).
       if (enabled !== loadedWith) reloadPreservingPosition();
     };
 
@@ -88,7 +87,7 @@ export default defineContentScript({
         const { state, settings } = await sendMessage({ type: 'GET_STATE' });
         apply(state.enabled, settings.mode);
       } catch (error) {
-        logger.warn('stato non disponibile, la pagina resta come si è caricata', error);
+        logger.warn('state unavailable, page stays as loaded', error);
       }
     })();
 
@@ -97,11 +96,11 @@ export default defineContentScript({
       apply(message.state.enabled, message.settings.mode);
     });
 
-    // Navigazione SPA: lo stato per-scheda non cambia, ma il video sì.
+    // SPA navigation: per-tab state does not change, but video does.
     window.addEventListener(
       YT_EVENTS.navigateFinish,
       () => {
-        logger.debug('navigazione SPA completata');
+        logger.debug('SPA navigation completed');
       },
       { signal },
     );
@@ -111,8 +110,8 @@ export default defineContentScript({
 });
 
 /**
- * Ricarica preservando la posizione di riproduzione (issue #56).
- * Non chiama mai `play()`: il bug #6 dell'originale era esattamente questo.
+ * Reloads while preserving playback position (issue #56).
+ * Never calls `play()`: original bug #6 was exactly this.
  */
 function reloadPreservingPosition(): void {
   try {

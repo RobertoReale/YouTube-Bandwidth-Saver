@@ -1,21 +1,21 @@
 /**
- * PLAN.md §6 — installazione degli hook nel MAIN world.
+ * PLAN.md §6 — hook installation in MAIN world.
  *
- * Requisiti implementati:
- *  - Sincroni: nessun `await` prima dell'installazione, o il player response
- *    inline è già stato letto.
- *  - Idempotenti: una sentinella su `window` evita la doppia installazione.
- *  - Trasparenti: tutto ciò che non è un player response passa intatto.
- *  - Reversibili: ogni hook restituisce la sua funzione di disinstallazione.
- *  - `configurable: true`: non impediamo ad altre estensioni di installare
- *    i propri hook sopra i nostri.
+ * Requirements implemented:
+ *  - Synchronous: no `await` prior to installation, or inline player response
+ *    has already been read.
+ *  - Idempotent: sentinel on `window` prevents duplicate installation.
+ *  - Transparent: everything that is not a player response passes untouched.
+ *  - Reversible: each hook returns its uninstall function.
+ *  - `configurable: true`: we do not prevent other extensions from installing
+ *    their hooks over ours.
  */
 
 import { PLAYER_ENDPOINTS, PLAYER_RESPONSE_GLOBALS } from '../selectors';
 import type { HookSource } from '../types';
 import { looksLikePlayerResponseText } from './response-schema';
 
-/** Trasforma un player response. DEVE essere sincrona e non lanciare. */
+/** Transforms a player response. MUST be synchronous and never throw. */
 export type Transform = (input: unknown, source: HookSource) => unknown;
 
 export interface HookContext {
@@ -31,17 +31,17 @@ function isPlayerUrl(url: string): boolean {
   return false;
 }
 
-/** Applica il transform a un testo JSON. Fail-open su qualunque problema. */
+/** Applies transform to JSON text. Fail-open on any issue. */
 function transformText(text: string, ctx: HookContext, source: HookSource): string {
   if (!looksLikePlayerResponseText(text)) return text;
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
-    return text; // JSON troncato o non-JSON: si restituisce intatto.
+    return text; // Truncated JSON or non-JSON: returned untouched.
   }
   const out = ctx.transform(parsed, source);
-  if (out === parsed) return text; // non applicato: evita un re-stringify inutile
+  if (out === parsed) return text; // not applied: avoid useless re-stringify
   try {
     return JSON.stringify(out);
   } catch {
@@ -52,9 +52,9 @@ function transformText(text: string, ctx: HookContext, source: HookSource): stri
 /**
  * Hook 1 — `window.ytInitialPlayerResponse`.
  *
- * Funziona perché la dichiarazione `var ytInitialPlayerResponse = {...}` dello
- * script inline di YouTube non ridefinisce una property accessor già esistente e
- * `configurable`: l'assegnazione passa dal nostro setter.
+ * Works because `var ytInitialPlayerResponse = {...}` declaration in
+ * YouTube inline script doesn't redefine an existing accessor property that is
+ * `configurable`: assignment passes through our setter.
  */
 export function installPropertyHook(ctx: HookContext): () => void {
   const restores: (() => void)[] = [];
@@ -74,7 +74,7 @@ export function installPropertyHook(ctx: HookContext): () => void {
         },
       });
     } catch {
-      continue; // property non ridefinibile: si rinuncia a questo hook, non si lancia
+      continue; // property non-redefinable: give up on this hook without throwing
     }
 
     restores.push(() => {
@@ -84,8 +84,8 @@ export function installPropertyHook(ctx: HookContext): () => void {
           Object.defineProperty(target, name, previousDescriptor);
         } else {
           delete target[name];
-          // Il valore già consegnato alla pagina va preservato, altrimenti la
-          // disattivazione cancellerebbe un dato che il player usa ancora.
+          // Value already delivered to page must be preserved, otherwise
+          // disabling would erase data that player is still using.
           target[name] = current;
         }
       } catch {
@@ -99,7 +99,7 @@ export function installPropertyHook(ctx: HookContext): () => void {
   };
 }
 
-/** Hook 2 — `window.fetch` (navigazioni SPA). */
+/** Hook 2 — `window.fetch` (SPA navigations). */
 export function installFetchHook(ctx: HookContext): () => void {
   const original = window.fetch;
 
@@ -112,8 +112,8 @@ export function installFetchHook(ctx: HookContext): () => void {
     } catch {
       return promise;
     }
-    // ★ Ogni richiesta che non è un player response esce da qui senza essere
-    //   toccata: stessa Promise, stessa Response, stesso body streaming.
+    // ★ Any request that is not a player response leaves here untouched:
+    //   same Promise, same Response, same streaming body.
     if (!isPlayerUrl(url)) return promise;
 
     return promise.then(async (response) => {
@@ -127,15 +127,15 @@ export function installFetchHook(ctx: HookContext): () => void {
           headers: response.headers,
         });
       } catch {
-        return response; // fail-open: la response originale passa intatta
+        return response; // fail-open: original response passes untouched
       }
     });
   };
 
   window.fetch = wrapped;
   return () => {
-    // Solo se nessun altro ha rimpiazzato `fetch` dopo di noi: sovrascrivere
-    // l'hook di qualcun altro sarebbe peggio che lasciare il nostro installato.
+    // Only if no one else replaced `fetch` after us: overwriting
+    // someone else's hook would be worse than leaving ours installed.
     if (window.fetch === wrapped) window.fetch = original;
   };
 }
@@ -145,10 +145,10 @@ interface TrackedXhr extends XMLHttpRequest {
 }
 
 /**
- * Cerca un descrittore risalendo la catena dei prototipi.
- * Su `XMLHttpRequest` nativo i getter sono proprietà proprie del prototipo, ma
- * se un'altra estensione ha sottoclassato `XMLHttpRequest` si trovano su un
- * antenato: cercare solo fra le proprietà proprie farebbe rinunciare l'hook.
+ * Searches for a descriptor up prototype chain.
+ * On native `XMLHttpRequest` getters are prototype properties, but
+ * if another extension subclassed `XMLHttpRequest` they are on an
+ * ancestor: searching only own properties would cause hook to give up.
  */
 function findDescriptor(start: object, key: string): PropertyDescriptor | undefined {
   let current: object | null = start;
@@ -161,11 +161,11 @@ function findDescriptor(start: object, key: string): PropertyDescriptor | undefi
 }
 
 /**
- * Hook 3 — `XMLHttpRequest` (percorsi legacy).
+ * Hook 3 — `XMLHttpRequest` (legacy paths).
  *
- * I getter sono installati sull'istanza in `send()` e filtrano al momento della
- * lettura: così non c'è nessuna dipendenza dall'ordine con cui YouTube registra
- * i propri listener, che è il punto dove questo hook fallirebbe.
+ * Getters installed on instance in `send()` and filter at reading time:
+ * so there's no dependency on order YouTube registers
+ * its listeners, which is where this hook would fail.
  */
 export function installXhrHook(ctx: HookContext): () => void {
   const proto = XMLHttpRequest.prototype;
@@ -203,13 +203,13 @@ export function installXhrHook(ctx: HookContext): () => void {
           get: (): unknown => {
             const raw = Reflect.apply(readResponse, this, []) as unknown;
             if (typeof raw === 'string') return transformText(raw, ctx, 'xhr');
-            // `responseType: 'json'` consegna un oggetto già parsato.
+            // `responseType: 'json'` delivers already parsed object.
             if (raw !== null && typeof raw === 'object') return ctx.transform(raw, 'xhr');
             return raw;
           },
         });
       } catch {
-        /* fail-open: la richiesta procede non filtrata */
+        /* fail-open: request proceeds unfiltered */
       }
     }
     Reflect.apply(originalSend, this, args);
@@ -225,8 +225,8 @@ export function installXhrHook(ctx: HookContext): () => void {
 }
 
 /**
- * Installa tutti e tre gli hook. Idempotente: una seconda chiamata non fa nulla
- * e restituisce una disinstallazione no-op.
+ * Installs all three hooks. Idempotent: second call does nothing
+ * and returns a no-op uninstall.
  */
 export function installHooks(ctx: HookContext): () => void {
   const target = window as unknown as Record<string, unknown>;

@@ -1,27 +1,27 @@
 /**
- * Cache SINCRONA della decisione "questa pagina va filtrata?".
+ * SYNCHRONOUS cache of decision "should this page be filtered?".
  *
- * Il problema: a `document_start` il MAIN world deve decidere prima che lo script
- * inline di YouTube assegni `ytInitialPlayerResponse`. La fonte di verità è il
- * service worker (§7), ma interrogarlo è asincrono, e `PLAN.md` §11 vieta
- * qualunque `await` prima dell'installazione degli hook.
+ * The problem: at `document_start` MAIN world must decide before YouTube inline
+ * script assigns `ytInitialPlayerResponse`. Single source of truth is service
+ * worker (§7), but querying it is async, and `PLAN.md` §11 forbids
+ * any `await` prior to hook installation.
  *
- * La soluzione: `sessionStorage` e `localStorage` sono leggibili in modo
- * sincrono, e il content script ISOLATED condivide l'origine della pagina.
+ * The solution: `sessionStorage` and `localStorage` are readable
+ * synchronously, and ISOLATED content script shares page origin.
  *
- *  - `sessionStorage` è per-contesto-di-navigazione → semantica esatta per lo
- *    stato per-scheda di RF-2, e sopravvive ai reload della stessa scheda.
- *  - `localStorage` è condiviso fra le schede → serve solo per la modalità
- *    `always`, dove la decisione non dipende dalla scheda.
+ *  - `sessionStorage` is per-browsing-context → exact semantics for per-tab
+ *    state of RF-2, surviving same-tab reloads.
+ *  - `localStorage` is shared across tabs → only needed for `always`
+ *    mode, where decision does not depend on tab.
  *
- * Il service worker resta l'unica fonte di verità: questi valori sono una cache
- * che serve solo a vincere la corsa contro lo script inline. Se divergono,
- * l'ISOLATED world corregge la cache appena il worker risponde (§8).
+ * Service worker remains single source of truth: these values are a cache
+ * that only serves to win race against inline script. If they diverge,
+ * ISOLATED world corrects cache as soon as worker responds (§8).
  *
- * Nota di sicurezza (§13): la pagina può leggere e scrivere questi valori. Il
- * danno massimo è attivare o disattivare la modalità audio-only, che non è un
- * privilegio: nessun dato sensibile passa da qui, e la decisione viene comunque
- * riconciliata con il worker a ogni caricamento.
+ * Security note (§13): page can read and write these values. Maximum
+ * damage is turning audio-only mode on or off, which is not a privilege:
+ * no sensitive data passes through here, and decision is reconciled
+ * with worker on every load anyway.
  */
 
 import type { Mode } from './types';
@@ -29,7 +29,7 @@ import type { Mode } from './types';
 const TAB_KEY = 'ytao:tab-enabled';
 const MODE_KEY = 'ytao:mode';
 
-/** Legge senza mai lanciare: in alcune modalità privacy lo storage è vietato. */
+/** Reads without ever throwing: in some privacy modes storage is restricted. */
 function read(storage: () => Storage, key: string): string | null {
   try {
     return storage().getItem(key);
@@ -43,23 +43,23 @@ function write(storage: () => Storage, key: string, value: string | null): void 
     if (value === null) storage().removeItem(key);
     else storage().setItem(key, value);
   } catch {
-    /* nessuna conseguenza: si perde solo la cache, non la correttezza */
+    /* no consequence: cache is lost, not correctness */
   }
 }
 
 /**
- * La decisione sincrona da usare a `document_start`.
- * Default `false`: in assenza di informazione, YouTube funziona normalmente.
+ * Synchronous decision to use at `document_start`.
+ * Default `false`: in absence of information, normal YouTube behavior.
  */
 export function readCachedDecision(): boolean {
   const perTab = read(() => sessionStorage, TAB_KEY);
   if (perTab === '1') return true;
   if (perTab === '0') return false;
-  // Nessuna decisione per questa scheda: solo `always` giustifica il filtro.
+  // No decision for this tab: only `always` mode justifies filtering.
   return read(() => localStorage, MODE_KEY) === 'always';
 }
 
-/** Chiamata dall'ISOLATED world quando il worker ha detto la sua. */
+/** Called by ISOLATED world when worker has responded. */
 export function writeCachedDecision(enabled: boolean, mode: Mode): void {
   write(() => sessionStorage, TAB_KEY, enabled ? '1' : '0');
   write(() => localStorage, MODE_KEY, mode);

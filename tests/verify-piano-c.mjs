@@ -4,17 +4,17 @@ import { chromium } from 'playwright';
 const extensionPath = path.resolve('.output/chrome-mv3');
 
 const videos = [
-  { name: 'Normale', url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' },
-  { name: 'Corto', url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' },
-  { name: 'Musicale', url: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk' }, // Despacito
-  { name: 'Music', url: 'https://music.youtube.com/watch?v=kJQP7kiw5Fk' },
+  { name: 'Normal', url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' },
+  { name: 'Short', url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' },
+  { name: 'Music Video', url: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk' }, // Despacito
+  { name: 'YouTube Music', url: 'https://music.youtube.com/watch?v=kJQP7kiw5Fk' },
 ];
 
 (async () => {
-  console.log(`Lancio Chromium con estensione da: ${extensionPath}`);
+  console.log(`Launching Chromium with extension from: ${extensionPath}`);
 
   const browserContext = await chromium.launchPersistentContext('', {
-    headless: false, // Le estensioni in MV3 spesso richiedono headful, e l'automazione su YT funziona meglio
+    headless: false, // MV3 extensions often require headful, and automation on YT works better
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -41,18 +41,18 @@ const videos = [
     }
   });
 
-  // Gestiremo il consent dialog cliccando sul bottone invece dei cookie
+  // Handle consent dialog by clicking button instead of cookies
 
   let failed = false;
 
   for (const video of videos) {
-    console.log(`\n--- Testando ${video.name}: ${video.url} ---`);
+    console.log(`\n--- Testing ${video.name}: ${video.url} ---`);
     try {
       await page.goto(video.url, { waitUntil: 'domcontentloaded' });
 
-      console.log('Attendo che il video parta e gestisco eventuali dialog...');
+      console.log('Waiting for video to start and handling any dialogs...');
 
-      // Prova a cliccare su Reject All o Accept All se presente
+      // Try clicking Reject All or Accept All if present
       try {
         const rejectBtn = page
           .locator(
@@ -61,12 +61,12 @@ const videos = [
           .first();
         await rejectBtn.waitFor({ state: 'visible', timeout: 5000 });
         await rejectBtn.click();
-        console.log('Dialog del consenso superato.');
+        console.log('Consent dialog bypassed.');
       } catch (_e) {
-        // Nessun dialog visibile
+        // No visible dialog
       }
 
-      // Aspetta che il video sia playing e avanzi
+      // Wait for video to be playing and progressing
       const isPlaying = await page
         .waitForFunction(
           () => {
@@ -79,20 +79,20 @@ const videos = [
 
       if (!isPlaying) {
         await page.screenshot({ path: 'screenshot.png' });
-        console.error('❌ Il video non parte o si è bloccato. Guarda screenshot.png.');
+        console.error('❌ Video did not start or got stuck. See screenshot.png.');
         failed = true;
         break;
       }
-      console.log('✅ Video partito e in esecuzione.');
+      console.log('✅ Video started and running.');
 
-      // Controllo la qualità impostata dal player
+      // Check quality set by player
       const quality = await page.evaluate(() => {
         const player = document.querySelector('#movie_player');
-        return player?.getPlaybackQuality ? player.getPlaybackQuality() : 'sconosciuta';
+        return player?.getPlaybackQuality ? player.getPlaybackQuality() : 'unknown';
       });
-      console.log(`Qualità in riproduzione: ${quality}`);
+      console.log(`Playback quality: ${quality}`);
 
-      // Aspetto 5 secondi
+      // Wait 5 seconds
       await page.waitForTimeout(5000);
 
       const isStillPlaying = await page.evaluate(() => {
@@ -101,18 +101,18 @@ const videos = [
       });
 
       if (!isStillPlaying) {
-        console.error('❌ Il player si è rotto dopo aver forzato la qualità a runtime.');
+        console.error('❌ Player broke after forcing quality at runtime.');
         failed = true;
         break;
       }
 
-      console.log('Testo il seek...');
+      console.log('Testing seek...');
       await page.evaluate(() => {
         const video = document.querySelector('video');
         if (video) video.currentTime += 30;
       });
 
-      // Verifica se riprende dopo il seek
+      // Verify if playback recovers after seek
       const seekRecovered = await page
         .waitForFunction(
           () => {
@@ -124,12 +124,12 @@ const videos = [
         .catch(() => false);
 
       if (!seekRecovered) {
-        console.error('❌ Il player si è rotto dopo il seek.');
+        console.error('❌ Player broke after seek.');
         failed = true;
         break;
       }
 
-      // Leggi byte decodificati
+      // Read decoded bytes
       const stats = await page.evaluate(() => {
         const video = document.querySelector('video');
         return {
@@ -139,10 +139,10 @@ const videos = [
       });
 
       console.log(
-        `✅ Seek completato. Byte decodificati: Video ${stats.videoMB} MB, Audio ${stats.audioMB} MB.`,
+        `✅ Seek completed. Decoded bytes: Video ${stats.videoMB} MB, Audio ${stats.audioMB} MB.`,
       );
     } catch (e) {
-      console.error('❌ Errore durante il test di', video.name, e);
+      console.error('❌ Error while testing', video.name, e);
       failed = true;
       break;
     }
@@ -151,8 +151,8 @@ const videos = [
   await browserContext.close();
 
   if (failed) {
-    console.error('\n🔴 IL PIANO C HA FALLITO LA VERIFICA.');
+    console.error('\n🔴 PLAN C VERIFICATION FAILED.');
   } else {
-    console.log('\n🟢 IL PIANO C HA SUPERATO LA VERIFICA!');
+    console.log('\n🟢 PLAN C VERIFICATION PASSED!');
   }
 })();

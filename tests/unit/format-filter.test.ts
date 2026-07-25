@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { classifyFormat, filterPlayerResponse } from '../../lib/player/format-filter';
 import type { RawFormat } from '../../lib/player/response-schema';
 
-/** Le fixture si caricano come `unknown`: è così che arrivano dal player. */
+/** Fixtures are loaded as `unknown`: that's how they arrive from player. */
 function fixture(name: string): unknown {
   const path = fileURLToPath(new URL(`../fixtures/${name}.json`, import.meta.url));
   return JSON.parse(readFileSync(path, 'utf8')) as unknown;
@@ -16,11 +16,11 @@ function formatsOf(response: unknown, field: 'adaptiveFormats' | 'formats'): Raw
 }
 
 describe('classifyFormat', () => {
-  it('riconosce il video dal mimeType', () => {
+  it('recognizes video from mimeType', () => {
     expect(classifyFormat({ mimeType: 'video/mp4; codecs="avc1"' })).toBe('video');
   });
 
-  it("riconosce l'audio dal mimeType", () => {
+  it('recognizes audio from mimeType', () => {
     expect(classifyFormat({ mimeType: 'audio/webm; codecs="opus"' })).toBe('audio');
   });
 
@@ -29,22 +29,22 @@ describe('classifyFormat', () => {
     ['height', { height: 1080 }],
     ['fps', { fps: 60 }],
     ['qualityLabel', { qualityLabel: '720p' }],
-  ])('classifica come video sul solo segnale %s, senza mimeType', (_name, format) => {
+  ])('classifies as video on sole signal %s, without mimeType', (_name, format) => {
     expect(classifyFormat(format)).toBe('video');
   });
 
   it.each([
     ['audioQuality', { audioQuality: 'AUDIO_QUALITY_LOW' }],
-    ['audioSampleRate stringa', { audioSampleRate: '44100' }],
-    ['audioSampleRate numero', { audioSampleRate: 44100 }],
+    ['audioSampleRate string', { audioSampleRate: '44100' }],
+    ['audioSampleRate number', { audioSampleRate: 44100 }],
     ['audioChannels', { audioChannels: 2 }],
-  ])('classifica come audio sul solo segnale %s', (_name, format) => {
+  ])('classifies as audio on sole signal %s', (_name, format) => {
     expect(classifyFormat(format)).toBe('audio');
   });
 
-  it('i segnali video vincono su quelli audio: un progressivo è video', () => {
-    // Se lo classificassimo audio, il player ripiegherebbe su un formato
-    // progressivo e scaricherebbe video comunque.
+  it('video signals win over audio ones: progressive format is video', () => {
+    // If we classified it as audio, player would fall back to a
+    // progressive format and download video anyway.
     expect(
       classifyFormat({
         mimeType: 'video/mp4; codecs="avc1, mp4a"',
@@ -54,29 +54,29 @@ describe('classifyFormat', () => {
     ).toBe('video');
   });
 
-  it('un mimeType di tipo sconosciuto non decide da solo', () => {
+  it('an unknown mimeType does not decide on its own', () => {
     expect(classifyFormat({ mimeType: 'application/x-mpegurl' })).toBe('unknown');
   });
 
-  it('usa gli itag solo come ultimo segnale', () => {
+  it('uses itags only as last signal', () => {
     const options = { audioItags: new Set([999]), videoItags: new Set([998]) };
     expect(classifyFormat({ itag: 999 }, options)).toBe('audio');
     expect(classifyFormat({ itag: 998 }, options)).toBe('video');
-    // Il mimeType ha la precedenza sull'itag.
+    // mimeType takes precedence over itag.
     expect(classifyFormat({ itag: 999, mimeType: 'video/mp4' }, options)).toBe('video');
-    // Itag non in tabella, e nessuna tabella per default.
+    // Itag not in table, and no default table.
     expect(classifyFormat({ itag: 137 }, options)).toBe('unknown');
     expect(classifyFormat({ itag: 137 })).toBe('unknown');
   });
 
-  it('non classifica nulla su un oggetto vuoto o con campi di tipo errato', () => {
+  it('does not classify anything on empty object or invalid type fields', () => {
     expect(classifyFormat({})).toBe('unknown');
-    expect(classifyFormat({ mimeType: 42, width: 'grande', itag: 'x' })).toBe('unknown');
+    expect(classifyFormat({ mimeType: 42, width: 'large', itag: 'x' })).toBe('unknown');
   });
 });
 
-describe('filterPlayerResponse — video normale', () => {
-  it('rimuove le tracce video e tiene quelle audio', () => {
+describe('filterPlayerResponse — normal video', () => {
+  it('removes video tracks and keeps audio ones', () => {
     const input = fixture('normal-video');
     const result = filterPlayerResponse(input);
 
@@ -91,24 +91,24 @@ describe('filterPlayerResponse — video normale', () => {
     expect(adaptive.map((f) => f.itag)).toEqual([140, 251]);
   });
 
-  it('svuota anche i formati progressivi, altrimenti il player ripiega su quelli', () => {
+  it('empties progressive formats as well, otherwise player falls back to them', () => {
     const result = filterPlayerResponse(fixture('normal-video'));
     expect(formatsOf(result.response, 'formats')).toHaveLength(0);
   });
 
-  it('conta correttamente le statistiche', () => {
+  it('correctly counts stats', () => {
     const result = filterPlayerResponse(fixture('normal-video'));
     expect(result.stats).toEqual({
       videoFormatsRemoved: 2,
       progressiveFormatsRemoved: 1,
       audioFormatsKept: 2,
       unknownFormatsKept: 0,
-      // 104857600 + 83886080 (adattivi) + 12345678 (progressivo)
+      // 104857600 + 83886080 (adaptive) + 12345678 (progressive)
       estimatedBytesSaved: 104857600 + 83886080 + 12345678,
     });
   });
 
-  it('preserva i campi che non ci riguardano', () => {
+  it('preserves fields that do not concern us', () => {
     const result = filterPlayerResponse(fixture('normal-video'));
     const response = result.response as Record<string, unknown>;
     expect(response.playabilityStatus).toEqual({ status: 'OK' });
@@ -116,7 +116,7 @@ describe('filterPlayerResponse — video normale', () => {
     expect((response.streamingData as Record<string, unknown>).expiresInSeconds).toBe('21540');
   });
 
-  it("NON muta l'input", () => {
+  it('does NOT mutate input', () => {
     const input = fixture('normal-video');
     const snapshot = JSON.stringify(input);
     const result = filterPlayerResponse(input);
@@ -125,7 +125,7 @@ describe('filterPlayerResponse — video normale', () => {
     expect(result.response).not.toBe(input);
   });
 
-  it("è idempotente: al secondo giro non c'è più nulla da rimuovere", () => {
+  it('is idempotent: on second pass there is nothing left to remove', () => {
     const once = filterPlayerResponse(fixture('normal-video'));
     const twice = filterPlayerResponse(once.response);
 
@@ -140,30 +140,30 @@ describe('filterPlayerResponse — fail-open', () => {
   it.each([
     ['null', null],
     ['undefined', undefined],
-    ['numero', 42],
-    ['stringa', 'non sono un player response'],
+    ['number', 42],
+    ['string', 'not a player response'],
     ['array', [1, 2, 3]],
-    ['oggetto vuoto', {}],
-  ])("restituisce l'input intatto su %s", (_name, input) => {
+    ['empty object', {}],
+  ])('returns untouched input on %s', (_name, input) => {
     const result = filterPlayerResponse(input);
     expect(result.applied).toBe(false);
     expect(result.response).toBe(input);
     expect(result.stats.videoFormatsRemoved).toBe(0);
   });
 
-  it('un oggetto vuoto è "no-streaming-data", non una violazione di schema', () => {
+  it('an empty object is "no-streaming-data", not a schema violation', () => {
     const result = filterPlayerResponse({});
     expect(result.reason).toBe('no-streaming-data');
     expect(result.violations).toHaveLength(0);
   });
 
-  it('un non-oggetto è "not-a-player-response"', () => {
+  it('a non-object is "not-a-player-response"', () => {
     expect(filterPlayerResponse(null).reason).toBe('not-a-player-response');
     expect(filterPlayerResponse([]).reason).toBe('not-a-player-response');
   });
 
-  it('registra una violazione se streamingData non è un oggetto', () => {
-    const result = filterPlayerResponse({ streamingData: 'sorpresa' });
+  it('records a violation if streamingData is not an object', () => {
+    const result = filterPlayerResponse({ streamingData: 'surprise' });
     expect(result.reason).toBe('no-streaming-data');
     expect(result.violations).toHaveLength(1);
     expect(result.violations[0]).toMatchObject({
@@ -173,7 +173,7 @@ describe('filterPlayerResponse — fail-open', () => {
     });
   });
 
-  it('registra una violazione se adaptiveFormats non è un array', () => {
+  it('records a violation if adaptiveFormats is not an array', () => {
     const result = filterPlayerResponse({ streamingData: { adaptiveFormats: { 0: {} } } });
     expect(result.applied).toBe(false);
     expect(result.violations[0]).toMatchObject({
@@ -183,12 +183,12 @@ describe('filterPlayerResponse — fail-open', () => {
     });
   });
 
-  it('scarta le voci non-oggetto dentro gli array e le registra', () => {
+  it('discards non-object entries inside arrays and records them', () => {
     const result = filterPlayerResponse({
       streamingData: {
         adaptiveFormats: [
           null,
-          'traccia',
+          'track',
           { mimeType: 'video/mp4', contentLength: '100' },
           { mimeType: 'audio/mp4' },
         ],
@@ -200,7 +200,7 @@ describe('filterPlayerResponse — fail-open', () => {
     expect(formatsOf(result.response, 'adaptiveFormats')).toHaveLength(1);
   });
 
-  it('non lancia mai, nemmeno se leggere un campo lancia', () => {
+  it('never throws, even if reading a field throws', () => {
     const hostile = {
       get streamingData(): never {
         throw new Error('boom');
@@ -212,28 +212,28 @@ describe('filterPlayerResponse — fail-open', () => {
     expect(result.response).toBe(hostile);
   });
 
-  it('un JSON troncato e riparsato resta gestibile', () => {
-    // Simula ciò che arriva se il body è stato tagliato: campi mancanti.
+  it('a truncated and re-parsed JSON remains manageable', () => {
+    // Simulates what arrives if body was truncated: missing fields.
     const result = filterPlayerResponse({ streamingData: {} });
     expect(result.applied).toBe(false);
     expect(result.reason).toBe('no-video-formats');
   });
 });
 
-describe('filterPlayerResponse — la guardia critica sulle zero tracce audio', () => {
-  it('annulla tutto se non resterebbe nessuna traccia audio', () => {
+describe('filterPlayerResponse — critical guard on zero audio tracks', () => {
+  it('cancels everything if no audio track would remain', () => {
     const input = fixture('video-only-no-audio');
     const result = filterPlayerResponse(input);
 
     expect(result.applied).toBe(false);
     expect(result.reason).toBe('no-audio-formats');
-    // ★ L'input torna intatto: senza questa guardia il video sarebbe
-    //   irriproducibile a ogni cambiamento del mimeType di YouTube.
+    // ★ Untouched input is returned: without this guard video would be
+    //   unplayable on any YouTube mimeType change.
     expect(result.response).toBe(input);
     expect(formatsOf(result.response, 'adaptiveFormats')).toHaveLength(2);
   });
 
-  it('le tracce sconosciute NON contano come audio', () => {
+  it('unknown tracks DO NOT count as audio', () => {
     const result = filterPlayerResponse({
       streamingData: {
         adaptiveFormats: [{ mimeType: 'video/mp4' }, { itag: 12345 }],
@@ -243,7 +243,7 @@ describe('filterPlayerResponse — la guardia critica sulle zero tracce audio', 
     expect(result.reason).toBe('no-audio-formats');
   });
 
-  it('ma le tracce sconosciute vengono TENUTE quando il filtro si applica', () => {
+  it('but unknown tracks ARE KEPT when filter applies', () => {
     const result = filterPlayerResponse({
       streamingData: {
         adaptiveFormats: [{ mimeType: 'video/mp4' }, { mimeType: 'audio/mp4' }, { itag: 12345 }],
@@ -255,13 +255,13 @@ describe('filterPlayerResponse — la guardia critica sulle zero tracce audio', 
   });
 });
 
-describe('★ filterPlayerResponse — la guardia SABR (RESEARCH.md R1)', () => {
+describe('★ filterPlayerResponse — SABR guard (RESEARCH.md R1)', () => {
   /**
-   * Osservato il 2026-07-25: con `serverAbrStreamingUrl` presente le tracce non
-   * hanno URL, la riproduzione passa dal server, e filtrarle fa rispondere 403 a
-   * `videoplayback` con "Your browser can't play this video".
+   * Observed on 2026-07-25: with `serverAbrStreamingUrl` present tracks have
+   * no URLs, playback relies on server, and filtering them causes 403 on
+   * `videoplayback` with "Your browser can't play this video".
    */
-  it('rinuncia quando streamingData contiene serverAbrStreamingUrl', () => {
+  it('gives up when streamingData contains serverAbrStreamingUrl', () => {
     const input = fixture('server-abr');
     const result = filterPlayerResponse(input);
 
@@ -271,8 +271,8 @@ describe('★ filterPlayerResponse — la guardia SABR (RESEARCH.md R1)', () => 
     expect(result.videoId).toBe('FIXTURE_SABR');
   });
 
-  it('la guardia scatta anche se le tracce sarebbero filtrabili', () => {
-    // Il punto: la filtrabilità apparente non conta. Se c'è SABR, si rinuncia.
+  it('guard fires even if tracks appear filterable', () => {
+    // Point: apparent filterability doesn't matter. If SABR present, give up.
     const result = filterPlayerResponse({
       streamingData: {
         serverAbrStreamingUrl: 'https://example.invalid/abr',
@@ -284,7 +284,7 @@ describe('★ filterPlayerResponse — la guardia SABR (RESEARCH.md R1)', () => 
     expect(result.stats.videoFormatsRemoved).toBe(0);
   });
 
-  it('la guardia precede quella sul DRM: SABR è la condizione più generale', () => {
+  it('guard precedes DRM guard: SABR is more general condition', () => {
     const result = filterPlayerResponse({
       streamingData: {
         serverAbrStreamingUrl: 'https://example.invalid/abr',
@@ -295,7 +295,7 @@ describe('★ filterPlayerResponse — la guardia SABR (RESEARCH.md R1)', () => 
     expect(result.reason).toBe('server-abr');
   });
 
-  it('ma NON scatta sui live, che hanno una loro ragione di rinuncia', () => {
+  it('does NOT fire on live streams, which have their own skip reason', () => {
     const result = filterPlayerResponse({
       videoDetails: { isLive: true },
       streamingData: {
@@ -306,14 +306,14 @@ describe('★ filterPlayerResponse — la guardia SABR (RESEARCH.md R1)', () => 
     expect(result.reason).toBe('live-stream');
   });
 
-  it('senza SABR il filtro lavora come prima', () => {
+  it('without SABR filter works as before', () => {
     const result = filterPlayerResponse(fixture('normal-video'));
     expect(result.applied).toBe(true);
   });
 });
 
-describe('filterPlayerResponse — casi che non vanno toccati', () => {
-  it('salta i live rilevati da videoDetails.isLive e dal manifest HLS', () => {
+describe('filterPlayerResponse — cases that should not be touched', () => {
+  it('skips live streams detected by videoDetails.isLive and HLS manifest', () => {
     const input = fixture('live-stream');
     const result = filterPlayerResponse(input);
 
@@ -331,11 +331,11 @@ describe('filterPlayerResponse — casi che non vanno toccati', () => {
     ],
     ['dashManifestUrl', { streamingData: { dashManifestUrl: 'https://example.invalid/m.mpd' } }],
     ['hlsManifestUrl', { streamingData: { hlsManifestUrl: 'https://example.invalid/m.m3u8' } }],
-  ])('rileva il live anche da %s', (_name, input) => {
+  ])('detects live stream from %s as well', (_name, input) => {
     expect(filterPlayerResponse(input).reason).toBe('live-stream');
   });
 
-  it('salta i contenuti con DRM', () => {
+  it('skips DRM protected content', () => {
     const input = fixture('drm-protected');
     const result = filterPlayerResponse(input);
     expect(result.applied).toBe(false);
@@ -343,7 +343,7 @@ describe('filterPlayerResponse — casi che non vanno toccati', () => {
     expect(result.response).toBe(input);
   });
 
-  it('rileva il DRM anche dal solo drmFamilies su una traccia', () => {
+  it('detects DRM from sole drmFamilies on a track', () => {
     const result = filterPlayerResponse({
       streamingData: {
         adaptiveFormats: [{ mimeType: 'video/mp4', drmFamilies: ['WIDEVINE'] }],
@@ -353,14 +353,14 @@ describe('filterPlayerResponse — casi che non vanno toccati', () => {
     expect(result.reason).toBe('drm-protected');
   });
 
-  it('rileva il DRM da drmFamilies presente solo nei progressivi', () => {
+  it('detects DRM from drmFamilies present only in progressives', () => {
     const result = filterPlayerResponse({
       streamingData: { formats: [{ mimeType: 'video/mp4', drmFamilies: [] }] },
     });
     expect(result.reason).toBe('drm-protected');
   });
 
-  it('non fa nulla se non ci sono tracce video da rimuovere', () => {
+  it('does nothing if there are no video tracks to remove', () => {
     const input = fixture('already-audio-only');
     const result = filterPlayerResponse(input);
     expect(result.applied).toBe(false);
@@ -368,7 +368,7 @@ describe('filterPlayerResponse — casi che non vanno toccati', () => {
     expect(result.response).toBe(input);
   });
 
-  it('non fa nulla su una risposta senza streamingData', () => {
+  it('does nothing on a response without streamingData', () => {
     const result = filterPlayerResponse(fixture('no-streaming-data'));
     expect(result.applied).toBe(false);
     expect(result.reason).toBe('no-streaming-data');
@@ -376,8 +376,8 @@ describe('filterPlayerResponse — casi che non vanno toccati', () => {
   });
 });
 
-describe('filterPlayerResponse — array parzialmente presenti', () => {
-  it('funziona con soli adaptiveFormats, senza formats', () => {
+describe('filterPlayerResponse — partially present arrays', () => {
+  it('works with only adaptiveFormats, without formats', () => {
     const result = filterPlayerResponse({
       streamingData: {
         adaptiveFormats: [{ mimeType: 'video/mp4' }, { mimeType: 'audio/mp4' }],
@@ -386,13 +386,13 @@ describe('filterPlayerResponse — array parzialmente presenti', () => {
     expect(result.applied).toBe(true);
     const streamingData = (result.response as { streamingData: Record<string, unknown> })
       .streamingData;
-    // Il campo assente resta assente: non ne inventiamo uno vuoto.
+    // Missing field stays missing: we don't invent an empty one.
     expect('formats' in streamingData).toBe(false);
     expect(result.stats.progressiveFormatsRemoved).toBe(0);
   });
 
-  it('con soli formats progressivi la guardia audio scatta', () => {
-    // Nessun `adaptiveFormats` → nessuna traccia audio da tenere → si annulla.
+  it('with only progressive formats audio guard triggers', () => {
+    // No `adaptiveFormats` → no audio track to keep → cancels.
     const input = { streamingData: { formats: [{ mimeType: 'video/mp4' }] } };
     const result = filterPlayerResponse(input);
     expect(result.applied).toBe(false);
@@ -401,19 +401,19 @@ describe('filterPlayerResponse — array parzialmente presenti', () => {
   });
 });
 
-describe('filterPlayerResponse — stima dei byte', () => {
+describe('filterPlayerResponse — byte estimation', () => {
   it.each([
-    ['stringa numerica', '1024', 1024],
-    ['numero', 2048, 2048],
-    ['stringa non numerica', 'molti', 0],
-    ['stringa vuota', '', 0],
+    ['numeric string', '1024', 1024],
+    ['number', 2048, 2048],
+    ['non-numeric string', 'many', 0],
+    ['empty string', '', 0],
     ['zero', '0', 0],
-    ['negativo', '-5', 0],
-    ['numero negativo', -5, 0],
-    ['non finito', Number.POSITIVE_INFINITY, 0],
-    ['assente', undefined, 0],
-    ['oggetto', { bytes: 10 }, 0],
-  ])('interpreta contentLength %s', (_name, contentLength, expected) => {
+    ['negative', '-5', 0],
+    ['negative number', -5, 0],
+    ['not finite', Number.POSITIVE_INFINITY, 0],
+    ['missing', undefined, 0],
+    ['object', { bytes: 10 }, 0],
+  ])('interprets contentLength %s', (_name, contentLength, expected) => {
     const result = filterPlayerResponse({
       streamingData: {
         adaptiveFormats: [{ mimeType: 'video/mp4', contentLength }, { mimeType: 'audio/mp4' }],
@@ -425,11 +425,11 @@ describe('filterPlayerResponse — stima dei byte', () => {
 
 describe('filterPlayerResponse — videoId', () => {
   it.each([
-    ['videoDetails assente', { streamingData: {} }, undefined],
-    ['videoDetails non oggetto', { videoDetails: 'x', streamingData: {} }, undefined],
-    ['videoId non stringa', { videoDetails: { videoId: 42 }, streamingData: {} }, undefined],
-    ['videoId valido', { videoDetails: { videoId: 'abc' }, streamingData: {} }, 'abc'],
-  ])('legge il videoId: %s', (_name, input, expected) => {
+    ['videoDetails missing', { streamingData: {} }, undefined],
+    ['videoDetails not object', { videoDetails: 'x', streamingData: {} }, undefined],
+    ['videoId not string', { videoDetails: { videoId: 42 }, streamingData: {} }, undefined],
+    ['valid videoId', { videoDetails: { videoId: 'abc' }, streamingData: {} }, 'abc'],
+  ])('reads videoId: %s', (_name, input, expected) => {
     expect(filterPlayerResponse(input).videoId).toBe(expected);
   });
 });

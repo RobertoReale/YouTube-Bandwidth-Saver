@@ -1,11 +1,11 @@
 /**
- * PLAN.md §6 — il cuore. Funzione pura, nessuna dipendenza dal browser.
+ * PLAN.md §6 — the core. Pure function, no browser dependencies.
  *
- * Regole non negoziabili implementate qui:
- *  1. Mai mutare l'input (copia strutturata solo del percorso toccato).
- *  2. Fail-open: in dubbio, si restituisce l'input intatto con `applied: false`.
- *  3. Guardia sulle zero tracce: se dopo il filtro non resta audio, si annulla.
- *  4. Più segnali per distinguere video da audio, non solo `mimeType`.
+ * Non-negotiable rules implemented here:
+ *  1. Never mutate input (structured copy of modified path only).
+ *  2. Fail-open: when in doubt, return untouched input with `applied: false`.
+ *  3. Zero-track guard: if no audio remains after filter, cancel.
+ *  4. Multiple signals to distinguish video from audio, not just `mimeType`.
  */
 
 import { FIELDS } from '../selectors';
@@ -16,16 +16,16 @@ export type TrackKind = 'audio' | 'video' | 'unknown';
 
 export interface FilterOptions {
   /**
-   * Itag noti, usati SOLO come ultimo segnale quando `mimeType` e le dimensioni
-   * mancano. Vuoto per default: popolarlo richiede RESEARCH.md R5, e una tabella
-   * inventata sarebbe peggio dell'assenza di tabella (classificherebbe male).
+   * Known itags, used ONLY as last signal when `mimeType` and dimensions
+   * are missing. Empty by default: populating requires RESEARCH.md R5, and an
+   * invented table would be worse than no table (misclassifying).
    */
   readonly audioItags?: ReadonlySet<number>;
   readonly videoItags?: ReadonlySet<number>;
 }
 
 export interface FilterResult {
-  /** Il player response da consegnare al player. `=== input` se non applicato. */
+  /** Player response to deliver to player. `=== input` if not applied. */
   readonly response: unknown;
   readonly applied: boolean;
   readonly reason?: SkipReason;
@@ -61,11 +61,11 @@ function skip(
 }
 
 /**
- * Classifica una traccia con più segnali indipendenti.
+ * Classifies a track using multiple independent signals.
  *
- * I segnali video vincono su quelli audio: un formato progressivo (video+audio
- * combinati, es. `formats`) ha sia `width` sia `audioQuality`, e va rimosso —
- * altrimenti il player ripiegherebbe su quello e scaricherebbe video comunque.
+ * Video signals take priority over audio ones: a progressive format (combined video+audio,
+ * e.g., `formats`) has both `width` and `audioQuality`, and must be removed —
+ * otherwise player would fall back to it and download video anyway.
  */
 export function classifyFormat(format: RawFormat, options: FilterOptions = {}): TrackKind {
   const mimeType = format[FIELDS.mimeType];
@@ -74,7 +74,7 @@ export function classifyFormat(format: RawFormat, options: FilterOptions = {}): 
     if (mimeType.startsWith('audio/')) return 'audio';
   }
 
-  // Segnali dimensionali: solo una traccia video ha larghezza, altezza o fps.
+  // Dimensional signals: only a video track has width, height, or fps.
   if (
     typeof format.width === 'number' ||
     typeof format.height === 'number' ||
@@ -84,7 +84,7 @@ export function classifyFormat(format: RawFormat, options: FilterOptions = {}): 
     return 'video';
   }
 
-  // Segnali audio-specifici.
+  // Audio-specific signals.
   if (
     typeof format.audioQuality === 'string' ||
     typeof format.audioSampleRate === 'string' ||
@@ -94,7 +94,7 @@ export function classifyFormat(format: RawFormat, options: FilterOptions = {}): 
     return 'audio';
   }
 
-  // Ultimo segnale: itag noto (vuoto per default, vedi FilterOptions).
+  // Last signal: known itag (empty by default, see FilterOptions).
   const itag = format.itag;
   if (typeof itag === 'number') {
     if (options.videoItags?.has(itag)) return 'video';
@@ -120,9 +120,9 @@ interface Partitioned {
 }
 
 /**
- * Divide una lista di tracce in "da tenere" e "da rimuovere".
- * Le tracce `unknown` vengono TENUTE: non rimuoviamo ciò che non capiamo.
- * Al massimo l'estensione è inefficace, che è sempre meglio di YouTube rotto.
+ * Splits a list of tracks into "to keep" and "to remove".
+ * `unknown` tracks are KEPT: we do not remove what we do not understand.
+ * At worst the extension is ineffective, which is always better than broken YouTube.
  */
 function partition(formats: readonly RawFormat[], options: FilterOptions): Partitioned {
   const kept: RawFormat[] = [];
@@ -151,8 +151,8 @@ function buildResponse(
   adaptive: readonly RawFormat[] | undefined,
   progressive: readonly RawFormat[] | undefined,
 ): unknown {
-  // Copia strutturata del solo percorso toccato: l'input non viene mai mutato,
-  // e non paghiamo un deep clone di un oggetto che può essere di megabyte.
+  // Structured copy of modified path only: input is never mutated,
+  // and we don't pay deep clone cost for an object that might be megabytes.
   const streamingData: Record<string, unknown> = { ...view.streamingData };
   if (adaptive !== undefined) streamingData[FIELDS.adaptiveFormats] = adaptive;
   if (progressive !== undefined) streamingData[FIELDS.formats] = progressive;
@@ -160,8 +160,8 @@ function buildResponse(
 }
 
 /**
- * Rimuove le tracce video da un player response.
- * Non lancia mai: qualunque input produce un `FilterResult` valido.
+ * Removes video tracks from a player response.
+ * Never throws: any input produces a valid `FilterResult`.
  */
 export function filterPlayerResponse(input: unknown, options: FilterOptions = {}): FilterResult {
   try {
@@ -170,7 +170,7 @@ export function filterPlayerResponse(input: unknown, options: FilterOptions = {}
 
     const { view } = parsed;
 
-    // RF-5: i live usano un manifest, non tracce filtrabili. Fail-open esplicito.
+    // RF-5: live streams use a manifest, not filterable tracks. Explicit fail-open.
     if (view.isLive) {
       return skip(input, 'live-stream', parsed.violations, {
         videoId: view.videoId,
@@ -178,25 +178,25 @@ export function filterPlayerResponse(input: unknown, options: FilterOptions = {}
       });
     }
 
-    // ★ Guardia SABR — la più importante di tutte, verificata sul campo il
+    // ★ SABR Guard — most important of all, verified in field on
     //   2026-07-25 (RESEARCH.md R1).
     //
-    //   Quando `streamingData` contiene `serverAbrStreamingUrl`, le tracce non
-    //   hanno URL: sono metadati, e la riproduzione passa interamente dal
-    //   server. Rimuoverle non risparmia un byte e rende incoerente la
-    //   richiesta che il player costruisce → 403 su `videoplayback` e
+    //   When `streamingData` contains `serverAbrStreamingUrl`, tracks have
+    //   no URLs: they are metadata, and playback goes entirely through
+    //   server. Removing them saves zero bytes and makes request built
+    //   by player inconsistent → 403 on `videoplayback` and
     //   "Your browser can't play this video".
     //
-    //   Senza questa guardia l'estensione ROMPE YouTube invece di alleggerirlo,
-    //   che è l'unico esito che il progetto considera inaccettabile.
-    //   Il risparmio, sotto SABR, si ottiene forzando la qualità minima
-    //   (`lib/player/quality.ts`), non filtrando qui.
+    //   Without this guard extension BREAKS YouTube instead of saving bandwidth,
+    //   which is the single outcome this project considers unacceptable.
+    //   Under SABR, savings are achieved by forcing minimal quality
+    //   (`lib/player/quality.ts`), not by filtering here.
     if (view.hasServerAbr) {
       return skip(input, 'server-abr', parsed.violations, { videoId: view.videoId });
     }
 
-    // I contenuti protetti non si toccano: il player ha percorsi propri e il
-    // rischio di romperli non vale il risparmio.
+    // Protected content is left untouched: player has custom flows and
+    // risk of breaking them isn't worth potential bandwidth savings.
     if (view.hasDrm) {
       return skip(input, 'drm-protected', parsed.violations, { videoId: view.videoId });
     }
@@ -208,18 +208,17 @@ export function filterPlayerResponse(input: unknown, options: FilterOptions = {}
     const progressiveRemoved = progressive?.removed.length ?? 0;
 
     if (videoRemoved === 0 && progressiveRemoved === 0) {
-      // Niente da rimuovere: già audio-only, oppure lo schema non è quello che
-      // crediamo. In entrambi i casi restituire l'input intatto è corretto.
+      // Nothing to remove: already audio-only, or schema is not what we think.
+      // In both cases returning untouched input is correct.
       return skip(input, 'no-video-formats', parsed.violations, { videoId: view.videoId });
     }
 
-    // ★ Guardia critica (§6). Senza questa, un cambiamento nel `mimeType` di
-    //   YouTube renderebbe ogni video non riproducibile.
+    // ★ Critical Guard (§6). Without this, a change in YouTube's `mimeType`
+    //   would make every video unplayable.
     //
-    //   Il controllo su `adaptive === undefined` non è ridondante: un player
-    //   response con soli `formats` progressivi non ha nessuna traccia audio
-    //   separata da tenere. Superata questa guardia, `adaptive` è definito —
-    //   il che rende il resto della funzione privo di rami irraggiungibili.
+    //   Check for `adaptive === undefined` is not redundant: a player
+    //   response with only progressive `formats` has no separate audio tracks to keep.
+    //   Once past this guard, `adaptive` is defined.
     if (adaptive === undefined || adaptive.audioKept === 0) {
       return skip(input, 'no-audio-formats', parsed.violations, { videoId: view.videoId });
     }
@@ -239,8 +238,8 @@ export function filterPlayerResponse(input: unknown, options: FilterOptions = {}
       isLive: false,
     };
   } catch {
-    // Rete di sicurezza finale: qualunque eccezione imprevista restituisce
-    // l'input intatto. Meglio l'estensione inefficace che YouTube rotto.
+    // Ultimate safety net: any unexpected exception returns untouched input.
+    // Ineffective extension is better than broken YouTube.
     return skip(input, 'internal-error');
   }
 }

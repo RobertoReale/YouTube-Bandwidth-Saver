@@ -1,4 +1,4 @@
-/** PLAN.md §8 — discriminated union e un solo punto di dispatch. */
+/** PLAN.md §8 — discriminated union and single dispatch point. */
 
 import { browser } from 'wxt/browser';
 import type { FilterStats, SchemaViolation, Settings, TabState } from './types';
@@ -16,7 +16,7 @@ export interface ResolvedState {
   readonly settings: Settings;
 }
 
-/** background → ISOLATED, broadcast su cambio di stato. */
+/** background → ISOLATED, broadcast on state change. */
 export type Broadcast = { readonly type: 'STATE_CHANGED' } & ResolvedState;
 
 export type ResponseOf<T extends Message['type']> = T extends 'GET_STATE' | 'TOGGLE_TAB'

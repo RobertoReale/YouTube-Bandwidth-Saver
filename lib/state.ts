@@ -1,11 +1,10 @@
 /**
- * PLAN.md §7 — stato per-scheda. Risolve la issue #3 dell'originale
- * (un booleano globale per tutte le schede, aperta dal 2017).
+ * PLAN.md §7 — per-tab state. Fixes issue #3 in original
+ * (a single global boolean for all tabs, open since 2017).
  *
- * `storage.session` non tocca il disco, si azzera al riavvio del browser
- * (semantica corretta per un toggle per-scheda) e non ha i limiti di quota
- * di `sync`. Il worker MV3 viene terminato: non si può tenere lo stato in una
- * variabile di modulo.
+ * `storage.session` does not touch disk, resets on browser restart
+ * (correct semantics for a per-tab toggle), and has no quota limits like
+ * `sync`. MV3 worker gets terminated: state cannot be held in module variable.
  */
 
 import { browser } from 'wxt/browser';
@@ -49,7 +48,7 @@ export async function setTabState(tabId: number, patch: Partial<TabState>): Prom
   try {
     await browser.storage.session.set({ [key(tabId)]: next });
   } catch {
-    /* fail-open: lo stato resta quello precedente */
+    /* fail-open: state remains unchanged */
   }
   return next;
 }
@@ -58,14 +57,14 @@ export async function removeTabState(tabId: number): Promise<void> {
   try {
     await browser.storage.session.remove(key(tabId));
   } catch {
-    /* niente da fare */
+    /* nothing to do */
   }
 }
 
 /**
- * Sweep: confronta le chiavi salvate con le schede realmente aperte.
- * Serve perché `tabs.onRemoved` non arriva se il worker dormiva quando la
- * scheda è stata chiusa.
+ * Sweep: compares stored keys against actually open tabs.
+ * Needed because `tabs.onRemoved` isn't fired if worker was sleeping when tab
+ * was closed.
  */
 export async function sweepClosedTabs(): Promise<number> {
   try {
@@ -87,9 +86,9 @@ export async function sweepClosedTabs(): Promise<number> {
 }
 
 /**
- * Decide se una scheda va filtrata, combinando modalità e stato per-scheda.
- * È l'unico punto in cui questa decisione viene presa (§7: una sola fonte
- * di verità, i content script non la derivano mai da soli).
+ * Decides if a tab should be filtered, combining mode and per-tab state.
+ * Single point where this decision is made (§7: single source of
+ * truth, content scripts never derive it on their own).
  */
 export function resolveEnabled(
   mode: Mode,

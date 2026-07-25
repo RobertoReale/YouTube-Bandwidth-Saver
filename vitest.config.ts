@@ -5,15 +5,15 @@ export default defineConfig({
   plugins: [WxtVitest()],
   test: {
     include: ['tests/unit/**/*.test.ts'],
-    // I file che hanno bisogno del DOM lo dichiarano con un commento
-    // `@vitest-environment happy-dom` in testa: `environmentMatchGlobs` è
-    // deprecato e un solo ambiente globale rallenterebbe i test puri.
+    // Files that need DOM declare it with a comment
+    // `@vitest-environment happy-dom` at the top: `environmentMatchGlobs` is
+    // deprecated and a single global environment would slow down pure tests.
     environment: 'node',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: ['lib/**/*.ts'],
-      // PLAN.md §10: 100% sui due moduli puri. Sul resto nessun obiettivo numerico.
+      // PLAN.md §10: 100% on the two pure modules. No numeric target for the rest.
       thresholds: {
         'lib/player/format-filter.ts': {
           statements: 100,

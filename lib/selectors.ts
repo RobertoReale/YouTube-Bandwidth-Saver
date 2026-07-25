@@ -1,28 +1,28 @@
 /**
- * PLAN.md §12 — TUTTE le stringhe che dipendono da YouTube vivono qui.
+ * PLAN.md §12 — ALL strings that depend on YouTube live here.
  *
- * Regola: se una stringa può cambiare perché YouTube cambia, sta in questo file,
- * con un commento su dove è stata osservata e quando. Quando YouTube cambia
- * qualcosa, la patch è localizzata a questo file.
+ * Rule: if a string can change because YouTube changes, it lives in this file,
+ * with a comment on where and when it was observed. When YouTube changes
+ * something, the patch is localized to this file.
  *
- * Osservato il 2026-07-25 sullo spike di Fase 0 (Chrome 1xx, www.youtube.com):
- * il player response conteneva `streamingData.adaptiveFormats` (tracce separate)
- * e `streamingData.formats` (progressivi), e gli hook hanno filtrato
- * -4 tracce video / -1 progressivo al primo caricamento e -2 progressivi sulla
- * navigazione SPA.
+ * Observed on 2026-07-25 during Phase 0 spike (Chrome 1xx, www.youtube.com):
+ * player response contained `streamingData.adaptiveFormats` (separate tracks)
+ * and `streamingData.formats` (progressive), and hooks filtered out
+ * -4 video tracks / -1 progressive on first load and -2 progressive on
+ * SPA navigation.
  */
 
-/** Nomi delle variabili globali che contengono un player response. */
+/** Names of global variables containing a player response. */
 export const PLAYER_RESPONSE_GLOBALS = ['ytInitialPlayerResponse'] as const;
 
 /**
- * Endpoint InnerTube che restituisce un player response.
- * Confrontato con `String.includes`, non con uguaglianza: l'URL reale porta
- * query string variabili (`?key=...&prettyPrint=false`).
+ * InnerTube endpoints returning a player response.
+ * Compared with `String.includes`, not equality: real URL carries
+ * variable query strings (`?key=...&prettyPrint=false`).
  */
 export const PLAYER_ENDPOINTS = ['/youtubei/v1/player'] as const;
 
-/** Campi del player response letti da `response-schema.ts`. */
+/** Fields of player response read by `response-schema.ts`. */
 export const FIELDS = {
   streamingData: 'streamingData',
   adaptiveFormats: 'adaptiveFormats',
@@ -34,22 +34,22 @@ export const FIELDS = {
   drmParams: 'drmParams',
   drmFamilies: 'drmFamilies',
   /**
-   * ★ Presenza = SABR (Server-Advised Bitrate) attivo.
+   * ★ Presence = SABR (Server-Advised Bitrate) active.
    *
-   * Osservato il 2026-07-25 su www.youtube.com, utente anonimo: `streamingData`
-   * conteneva `['expiresInSeconds', 'formats', 'adaptiveFormats',
-   * 'serverAbrStreamingUrl']`, e delle 6 tracce ZERO avevano `url` e ZERO
-   * `signatureCipher`. I formati sono solo metadati: la riproduzione passa dal
-   * server. Filtrarli lato client rompe il player (403 su `videoplayback`).
-   * Vedi RESEARCH.md R1.
+   * Observed on 2026-07-25 on www.youtube.com, anonymous user: `streamingData`
+   * contained `['expiresInSeconds', 'formats', 'adaptiveFormats',
+   * 'serverAbrStreamingUrl']`, and of the 6 tracks ZERO had `url` and ZERO
+   * `signatureCipher`. Formats are metadata only: playback relies on
+   * server. Filtering them client-side breaks player (403 on `videoplayback`).
+   * See RESEARCH.md R1.
    */
   serverAbrStreamingUrl: 'serverAbrStreamingUrl',
 } as const;
 
 /**
- * Livelli di qualità del player YouTube, dal più leggero al più pesante.
- * Stringhe dell'API del player, quindi dipendenti da YouTube.
- * `tiny` è 144p. `auto` è escluso di proposito: è ciò che vogliamo evitare.
+ * Quality levels of YouTube player, from lightest to heaviest.
+ * Player API strings, thus dependent on YouTube.
+ * `tiny` is 144p. `auto` is intentionally excluded: it is what we want to avoid.
  */
 export const QUALITY_LEVELS = [
   'tiny',
@@ -66,15 +66,15 @@ export const QUALITY_LEVELS = [
 
 export type QualityLevel = (typeof QUALITY_LEVELS)[number];
 
-/** Eventi custom emessi da YouTube (SPA). Usati dal mondo ISOLATED. */
+/** Custom events emitted by YouTube (SPA). Used by ISOLATED world. */
 export const YT_EVENTS = {
-  /** Fine di una navigazione SPA. Osservato stabile da anni. */
+  /** End of SPA navigation. Observed stable for years. */
   navigateFinish: 'yt-navigate-finish',
 } as const;
 
 /**
- * Selettori DOM. Ogni voce è una catena di fallback provata in ordine.
- * Non usati in Fase 1 (nessuna UI nel player): servono dalla Fase 2, RF-3.
+ * DOM Selectors. Each entry is a chain of fallbacks tried in order.
+ * Not used in Phase 1 (no UI in player): needed from Phase 2, RF-3.
  */
 export const DOM = {
   rightControls: ['.ytp-right-controls'],
@@ -83,5 +83,5 @@ export const DOM = {
   video: ['video.html5-main-video', 'video'],
 } as const;
 
-/** Host su cui l'estensione opera. Deve restare allineato a `host_permissions`. */
+/** Hosts on which extension operates. Must stay aligned with `host_permissions`. */
 export const SUPPORTED_HOSTS = ['www.youtube.com', 'music.youtube.com'] as const;

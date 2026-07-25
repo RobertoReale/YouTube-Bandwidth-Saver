@@ -11,7 +11,7 @@ export function Popup() {
   }, []);
 
   if (!settings) {
-    return <div class="loading">Caricamento...</div>;
+    return <div class="loading">Loading...</div>;
   }
 
   const handleModeChange = async (mode: Mode) => {
@@ -35,8 +35,8 @@ export function Popup() {
             onChange={() => handleModeChange('always')}
           />
           <div class="mode-info">
-            <span class="mode-title">Sempre Attivo</span>
-            <span class="mode-desc">Risparmia su tutti i video</span>
+            <span class="mode-title">Always Active</span>
+            <span class="mode-desc">Save bandwidth on all videos</span>
           </div>
         </label>
 
@@ -49,8 +49,8 @@ export function Popup() {
             onChange={() => handleModeChange('per-tab')}
           />
           <div class="mode-info">
-            <span class="mode-title">Per Scheda</span>
-            <span class="mode-desc">Attiva/disattiva col pulsante</span>
+            <span class="mode-title">Per Tab</span>
+            <span class="mode-desc">Toggle with button</span>
           </div>
         </label>
 
@@ -63,15 +63,15 @@ export function Popup() {
             onChange={() => handleModeChange('off')}
           />
           <div class="mode-info">
-            <span class="mode-title">Spento</span>
-            <span class="mode-desc">Video in qualità normale</span>
+            <span class="mode-title">Disabled</span>
+            <span class="mode-desc">Videos in normal quality</span>
           </div>
         </label>
       </section>
 
       <footer class="footer">
         <button type="button" class="options-btn" onClick={() => browser.runtime.openOptionsPage()}>
-          Impostazioni avanzate
+          Advanced settings
         </button>
       </footer>
     </div>

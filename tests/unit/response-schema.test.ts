@@ -8,12 +8,12 @@ import {
 
 describe('isRecord', () => {
   it.each([
-    ['oggetto', {}, true],
-    ['oggetto con campi', { a: 1 }, true],
+    ['object', {}, true],
+    ['object with fields', { a: 1 }, true],
     ['null', null, false],
     ['array', [], false],
-    ['stringa', 's', false],
-    ['numero', 1, false],
+    ['string', 's', false],
+    ['number', 1, false],
     ['undefined', undefined, false],
   ])('%s → %s', (_name, value, expected) => {
     expect(isRecord(value)).toBe(expected);
@@ -21,11 +21,11 @@ describe('isRecord', () => {
 });
 
 describe('describeType', () => {
-  it('descrive il tipo senza rivelare il valore', () => {
-    // ★ Privacy (§13): una SchemaViolation non deve mai contenere dati utente.
+  it('describes type without revealing value', () => {
+    // ★ Privacy (§13): a SchemaViolation must never contain user data.
     expect(describeType(null)).toBe('null');
     expect(describeType([])).toBe('array');
-    expect(describeType('segreto')).toBe('string');
+    expect(describeType('secret')).toBe('string');
     expect(describeType(42)).toBe('number');
     expect(describeType({})).toBe('object');
     expect(describeType(undefined)).toBe('undefined');
@@ -34,7 +34,7 @@ describe('describeType', () => {
 });
 
 describe('looksLikePlayerResponseText', () => {
-  it("evita di parsare testo che non c'entra", () => {
+  it('avoids parsing unrelated text', () => {
     expect(looksLikePlayerResponseText('{"adaptiveFormats":[]}')).toBe(true);
     expect(looksLikePlayerResponseText('{"formats":[]}')).toBe(true);
     expect(looksLikePlayerResponseText('<html></html>')).toBe(false);
@@ -43,7 +43,7 @@ describe('looksLikePlayerResponseText', () => {
 });
 
 describe('parsePlayerResponse', () => {
-  it('produce una vista di sola lettura sui campi che ci servono', () => {
+  it('produces a read-only view on required fields', () => {
     const input = {
       videoDetails: { videoId: 'abc', isLive: false },
       streamingData: {
@@ -64,7 +64,7 @@ describe('parsePlayerResponse', () => {
     expect(result.violations).toHaveLength(0);
   });
 
-  it('distingue campo assente da campo presente e vuoto', () => {
+  it('distinguishes missing field from present empty field', () => {
     const result = parsePlayerResponse({ streamingData: { adaptiveFormats: [] } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -72,7 +72,7 @@ describe('parsePlayerResponse', () => {
     expect(result.view.formats).toBeUndefined();
   });
 
-  it('non lancia su input ostile', () => {
+  it('does not throw on hostile input', () => {
     expect(parsePlayerResponse(undefined).ok).toBe(false);
     expect(parsePlayerResponse(Symbol('x')).ok).toBe(false);
     expect(parsePlayerResponse(() => undefined).ok).toBe(false);

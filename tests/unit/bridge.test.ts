@@ -1,12 +1,11 @@
 /**
- * PLAN.md §8 — il ponte è un canale che la pagina vede. Questi test verificano
- * che i messaggi non autenticati vengano ignorati e che l'insieme dei comandi
- * resti chiuso.
+ * PLAN.md §8 — the bridge is a channel the page can see. These tests verify
+ * that unauthenticated messages are ignored and the command set
+ * remains closed.
  *
- * Usiamo un'istanza `Window` di happy-dom come bersaglio, non il `window`
- * globale: nell'ambiente simulato di Vitest il globale non è l'oggetto che
- * finisce in `event.source`, e il controllo `event.source === target` — che in
- * un browser reale è essenziale — non sarebbe verificabile.
+ * We use a happy-dom `Window` instance as target, not global `window`:
+ * in Vitest's simulated environment global is not the object ending up in `event.source`,
+ * and `event.source === target` check — essential in a real browser — wouldn't be verifiable.
  */
 
 import { Window } from 'happy-dom';
@@ -20,10 +19,10 @@ import {
 
 const ORIGIN = 'https://www.youtube.com';
 
-/** `postMessage` consegna in modo asincrono: serve un giro di event loop. */
+/** `postMessage` delivers asynchronously: needs an event loop tick. */
 const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
-describe('ponte ISOLATED ↔ MAIN', () => {
+describe('ISOLATED ↔ MAIN bridge', () => {
   let page: Window;
   let target: BridgeTarget;
   const controllers: AbortController[] = [];
@@ -43,12 +42,12 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     return created;
   }
 
-  /** Inietta un messaggio come farebbe la pagina, non il nostro codice. */
+  /** Injects a message as the page would, not our code. */
   function forge(data: unknown): void {
     page.postMessage(data, ORIGIN);
   }
 
-  it("l'ISOLATED riceve i messaggi del MAIN dopo l'handshake", async () => {
+  it('ISOLATED receives MAIN messages after handshake', async () => {
     const received: MainToIsolated[] = [];
     createIsolatedBridge((message) => received.push(message), controller().signal, target);
     const main = createMainBridge(() => undefined, controller().signal, target);
@@ -60,7 +59,7 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     expect(received).toEqual([{ kind: 'filter-applied', videoId: 'abc', bytesSaved: 1024 }]);
   });
 
-  it("il MAIN riceve set-enabled dall'ISOLATED", async () => {
+  it('MAIN receives set-enabled from ISOLATED', async () => {
     const onSetEnabled = vi.fn();
     const isolated = createIsolatedBridge(() => undefined, controller().signal, target);
     createMainBridge(onSetEnabled, controller().signal, target);
@@ -72,11 +71,11 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     expect(onSetEnabled).toHaveBeenCalledWith(true);
   });
 
-  it("mette in coda i messaggi inviati prima dell'handshake", async () => {
+  it('queues messages sent before handshake', async () => {
     const onSetEnabled = vi.fn();
     const isolated = createIsolatedBridge(() => undefined, controller().signal, target);
 
-    // L'ISOLATED parla prima di conoscere il token: il messaggio va in coda.
+    // ISOLATED talks before knowing token: message gets queued.
     isolated.send({ kind: 'set-enabled', enabled: true });
     createMainBridge(onSetEnabled, controller().signal, target);
 
@@ -85,45 +84,45 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     expect(onSetEnabled).toHaveBeenCalledWith(true);
   });
 
-  it('★ ignora i messaggi senza il token di sessione', async () => {
+  it('★ ignores messages without session token', async () => {
     const received: MainToIsolated[] = [];
     createIsolatedBridge((message) => received.push(message), controller().signal, target);
     createMainBridge(() => undefined, controller().signal, target);
     await flush();
 
-    forge({ __ytao: 'ytao:v1', token: 'token-sbagliato', payload: { kind: 'filter-applied' } });
+    forge({ __ytao: 'ytao:v1', token: 'wrong-token', payload: { kind: 'filter-applied' } });
     await flush();
 
     expect(received).toHaveLength(0);
   });
 
-  it('ignora i messaggi che non sono nostri', async () => {
+  it('ignores messages that are not ours', async () => {
     const received: MainToIsolated[] = [];
     createIsolatedBridge((message) => received.push(message), controller().signal, target);
     createMainBridge(() => undefined, controller().signal, target);
     await flush();
 
     forge({ kind: 'filter-applied' });
-    forge('stringa');
+    forge('string');
     forge(null);
-    forge({ __ytao: 'canale-altrui', token: 'x', payload: {} });
+    forge({ __ytao: 'other-channel', token: 'x', payload: {} });
     forge({ __ytao: 'ytao:v1', token: 42, payload: {} });
     await flush();
 
     expect(received).toHaveLength(0);
   });
 
-  it('★ un secondo hello non sostituisce il token già appreso', async () => {
+  it('★ a second hello does not replace already learned token', async () => {
     const received: MainToIsolated[] = [];
     createIsolatedBridge((message) => received.push(message), controller().signal, target);
     createMainBridge(() => undefined, controller().signal, target);
     await flush();
 
-    // La pagina prova a farsi passare per il MAIN world con un token proprio.
-    forge({ __ytao: 'ytao:v1', token: 'token-pagina', payload: { kind: 'hello' } });
+    // Page tries to impersonate MAIN world with its own token.
+    forge({ __ytao: 'ytao:v1', token: 'page-token', payload: { kind: 'hello' } });
     forge({
       __ytao: 'ytao:v1',
-      token: 'token-pagina',
+      token: 'page-token',
       payload: { kind: 'filter-applied', videoId: 'x', bytesSaved: 1 },
     });
     await flush();
@@ -131,7 +130,7 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     expect(received).toHaveLength(0);
   });
 
-  it('★ ignora un set-enabled con payload non booleano', async () => {
+  it('★ ignores set-enabled with non-boolean payload', async () => {
     const onSetEnabled = vi.fn();
     const main = createMainBridge(onSetEnabled, controller().signal, target);
     await flush();
@@ -139,14 +138,14 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     forge({
       __ytao: 'ytao:v1',
       token: main.token,
-      payload: { kind: 'set-enabled', enabled: 'si' },
+      payload: { kind: 'set-enabled', enabled: 'yes' },
     });
     await flush();
 
     expect(onSetEnabled).not.toHaveBeenCalled();
   });
 
-  it("★ un comando fuori dall'insieme chiuso non fa nulla", async () => {
+  it('★ a command outside closed set does nothing', async () => {
     const onSetEnabled = vi.fn();
     const main = createMainBridge(onSetEnabled, controller().signal, target);
     await flush();
@@ -157,7 +156,7 @@ describe('ponte ISOLATED ↔ MAIN', () => {
     expect(onSetEnabled).not.toHaveBeenCalled();
   });
 
-  it("l'abort del signal chiude l'ascolto", async () => {
+  it('abort of signal closes listener', async () => {
     const onSetEnabled = vi.fn();
     const own = controller();
     const isolated = createIsolatedBridge(() => undefined, controller().signal, target);

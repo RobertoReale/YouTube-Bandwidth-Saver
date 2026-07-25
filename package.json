@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "author": "Roberto Reale",
-  "description": "Riduce al minimo la qualità video di YouTube per risparmiare il massimo della banda.",
+  "description": "Minimizes YouTube video quality to save maximum bandwidth.",
   "type": "module",
   "scripts": {
     "dev": "wxt",

@@ -1,11 +1,11 @@
 /**
  * @vitest-environment happy-dom
  *
- * PLAN.md §10 livello 2 — integrazione degli hook.
+ * PLAN.md §10 level 2 — hook integration.
  *
- * Il requisito più importante qui non è "il filtro funziona", è "tutto ciò che
- * non è un player response passa intatto". Un wrapper di `fetch` che rompe
- * `fetch` rompe YouTube intero.
+ * The most important requirement here isn't "the filter works", it's "everything that
+ * is not a player response passes untouched". A `fetch` wrapper breaking
+ * `fetch` breaks all of YouTube.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,7 +26,7 @@ const playerJson = {
   },
 };
 
-/** Contesto che rimuove le tracce video, come il vero MAIN world. */
+/** Context that removes video tracks, like real MAIN world. */
 function stripVideo(): HookContext & { calls: unknown[] } {
   const calls: unknown[] = [];
   return {
@@ -50,13 +50,13 @@ function stripVideo(): HookContext & { calls: unknown[] } {
   };
 }
 
-/** Contesto trasparente: non modifica nulla. */
+/** Transparent context: modifies nothing. */
 const passthrough: HookContext = { transform: (input) => input };
 
 /**
- * `window` visto come lo vede la pagina. Un'interfaccia con campi opzionali
- * invece di `Record<string, unknown>`: con `noUncheckedIndexedAccess` l'accesso
- * per indice restituirebbe sempre `T | undefined`.
+ * `window` as seen by page. Interface with optional fields
+ * instead of `Record<string, unknown>`: with `noUncheckedIndexedAccess` index access
+ * would always return `T | undefined`.
  */
 interface PageWindow {
   ytInitialPlayerResponse?: unknown;
@@ -65,7 +65,7 @@ interface PageWindow {
 
 const page = (): PageWindow => window as unknown as PageWindow;
 
-/** Legge la globale con la forma che il test si aspetta. */
+/** Reads global with shape test expects. */
 function storedFormats(): { mimeType?: string }[] {
   const stored = page().ytInitialPlayerResponse as
     | { streamingData?: { adaptiveFormats?: { mimeType?: string }[] } }
@@ -78,7 +78,7 @@ describe('installPropertyHook', () => {
     delete page().ytInitialPlayerResponse;
   });
 
-  it('filtra il valore assegnato allo script inline', () => {
+  it('filters value assigned to inline script', () => {
     const uninstall = installPropertyHook(stripVideo());
 
     page().ytInitialPlayerResponse = structuredClone(playerJson);
@@ -88,14 +88,14 @@ describe('installPropertyHook', () => {
     uninstall();
   });
 
-  it('la property resta configurabile, per non bloccare altre estensioni', () => {
+  it('property remains configurable, not to block other extensions', () => {
     const uninstall = installPropertyHook(passthrough);
     const descriptor = Object.getOwnPropertyDescriptor(window, 'ytInitialPlayerResponse');
     expect(descriptor?.configurable).toBe(true);
     uninstall();
   });
 
-  it('la disinstallazione preserva il valore già consegnato alla pagina', () => {
+  it('uninstall preserves value already delivered to page', () => {
     const uninstall = installPropertyHook(passthrough);
     page().ytInitialPlayerResponse = { marker: 1 };
     uninstall();
@@ -104,7 +104,7 @@ describe('installPropertyHook', () => {
     expect(Object.getOwnPropertyDescriptor(window, 'ytInitialPlayerResponse')?.get).toBeUndefined();
   });
 
-  it('la disinstallazione ripristina un descrittore preesistente', () => {
+  it('uninstall restores a pre-existing descriptor', () => {
     Object.defineProperty(window, 'ytInitialPlayerResponse', {
       configurable: true,
       writable: true,
@@ -125,24 +125,24 @@ describe('installFetchHook', () => {
     canned = new Response(JSON.stringify(playerJson), {
       status: 200,
       statusText: 'OK',
-      headers: { 'x-marker': 'preservato', 'content-type': 'application/json' },
+      headers: { 'x-marker': 'preserved', 'content-type': 'application/json' },
     });
     original = vi.fn(() => Promise.resolve(canned));
     window.fetch = original as unknown as typeof window.fetch;
   });
 
-  it('★ le richieste che non sono player response tornano IDENTICHE', async () => {
+  it('★ non-player response requests return IDENTICAL', async () => {
     const uninstall = installFetchHook(stripVideo());
 
     const response = await window.fetch(OTHER_URL);
 
-    // Stessa istanza: nessuna copia, nessun body consumato, nessun header perso.
+    // Same instance: no copy, no body consumed, no header lost.
     expect(response).toBe(canned);
     expect(await response.text()).toBe(JSON.stringify(playerJson));
     uninstall();
   });
 
-  it('non chiama nemmeno il transform per le richieste non-player', async () => {
+  it('does not even call transform for non-player requests', async () => {
     const ctx = stripVideo();
     const uninstall = installFetchHook(ctx);
     await window.fetch(OTHER_URL);
@@ -150,7 +150,7 @@ describe('installFetchHook', () => {
     uninstall();
   });
 
-  it('inoltra tutti gli argomenti alla fetch originale', async () => {
+  it('forwards all arguments to original fetch', async () => {
     const uninstall = installFetchHook(passthrough);
     const init = { method: 'POST', body: 'x' };
     await window.fetch(OTHER_URL, init);
@@ -158,7 +158,7 @@ describe('installFetchHook', () => {
     uninstall();
   });
 
-  it('filtra le richieste verso /youtubei/v1/player', async () => {
+  it('filters requests to /youtubei/v1/player', async () => {
     const uninstall = installFetchHook(stripVideo());
 
     const response = await window.fetch(PLAYER_URL);
@@ -168,17 +168,17 @@ describe('installFetchHook', () => {
     uninstall();
   });
 
-  it('preserva status, statusText e header sulla response riscritta', async () => {
+  it('preserves status, statusText and headers on rewritten response', async () => {
     const uninstall = installFetchHook(stripVideo());
     const response = await window.fetch(PLAYER_URL);
 
     expect(response.status).toBe(200);
     expect(response.statusText).toBe('OK');
-    expect(response.headers.get('x-marker')).toBe('preservato');
+    expect(response.headers.get('x-marker')).toBe('preserved');
     uninstall();
   });
 
-  it('riconosce anche un oggetto Request come input', async () => {
+  it('also recognizes a Request object as input', async () => {
     const uninstall = installFetchHook(stripVideo());
     const response = await window.fetch(new Request(PLAYER_URL));
     const body = (await response.json()) as typeof playerJson;
@@ -186,15 +186,15 @@ describe('installFetchHook', () => {
     uninstall();
   });
 
-  it('restituisce la response originale se il transform non cambia nulla', async () => {
+  it('returns original response if transform changes nothing', async () => {
     const uninstall = installFetchHook(passthrough);
     const response = await window.fetch(PLAYER_URL);
     expect(response).toBe(canned);
     uninstall();
   });
 
-  it("fail-open su body non-JSON verso l'endpoint player", async () => {
-    canned = new Response('adaptiveFormats ma non JSON', { status: 200 });
+  it('fail-open on non-JSON body to player endpoint', async () => {
+    canned = new Response('adaptiveFormats but not JSON', { status: 200 });
     original.mockResolvedValue(canned);
     const uninstall = installFetchHook(stripVideo());
 
@@ -203,7 +203,7 @@ describe('installFetchHook', () => {
     uninstall();
   });
 
-  it('fail-open se il transform lancia', async () => {
+  it('fail-open if transform throws', async () => {
     const uninstall = installFetchHook({
       transform() {
         throw new Error('boom');
@@ -214,14 +214,14 @@ describe('installFetchHook', () => {
     uninstall();
   });
 
-  it('la disinstallazione ripristina la fetch originale', () => {
+  it('uninstall restores original fetch', () => {
     const uninstall = installFetchHook(passthrough);
     expect(window.fetch).not.toBe(original);
     uninstall();
     expect(window.fetch).toBe(original);
   });
 
-  it("la disinstallazione non sovrascrive l'hook di qualcun altro", () => {
+  it("uninstall does not overwrite someone else's hook", () => {
     const uninstall = installFetchHook(passthrough);
     const somebodyElse = vi.fn() as unknown as typeof window.fetch;
     window.fetch = somebodyElse;
@@ -233,7 +233,7 @@ describe('installFetchHook', () => {
 describe('installXhrHook', () => {
   const realXhr = globalThis.XMLHttpRequest;
 
-  /** XHR finto: nessuna rete, ma con gli stessi descrittori del vero. */
+  /** Fake XHR: no network, but with same descriptors as real. */
   class FakeXhr {
     public opened: unknown[] = [];
     public sent = false;
@@ -261,7 +261,7 @@ describe('installXhrHook', () => {
     globalThis.XMLHttpRequest = realXhr;
   });
 
-  it("filtra responseText per le richieste verso l'endpoint player", () => {
+  it('filters responseText for requests to player endpoint', () => {
     const uninstall = installXhrHook(stripVideo());
 
     const xhr = new XMLHttpRequest();
@@ -273,7 +273,7 @@ describe('installXhrHook', () => {
     uninstall();
   });
 
-  it('★ non tocca responseText delle altre richieste', () => {
+  it('★ does not touch responseText of other requests', () => {
     const uninstall = installXhrHook(stripVideo());
 
     const xhr = new XMLHttpRequest();
@@ -284,7 +284,7 @@ describe('installXhrHook', () => {
     uninstall();
   });
 
-  it('filtra anche `response` quando è un oggetto già parsato', () => {
+  it('also filters `response` when it is an already parsed object', () => {
     class JsonXhr extends FakeXhr {
       override get response(): unknown {
         return structuredClone(playerJson);
@@ -302,7 +302,7 @@ describe('installXhrHook', () => {
     uninstall();
   });
 
-  it('inoltra gli argomenti a open e send originali', () => {
+  it('forwards arguments to original open and send', () => {
     const uninstall = installXhrHook(passthrough);
     const xhr = new XMLHttpRequest() as unknown as FakeXhr;
     (xhr as unknown as XMLHttpRequest).open('POST', OTHER_URL, true);
@@ -313,7 +313,7 @@ describe('installXhrHook', () => {
     uninstall();
   });
 
-  it('la disinstallazione ripristina open e send', () => {
+  it('uninstall restores open and send', () => {
     const before = { open: XMLHttpRequest.prototype.open, send: XMLHttpRequest.prototype.send };
     const uninstall = installXhrHook(passthrough);
     expect(XMLHttpRequest.prototype.open).not.toBe(before.open);
@@ -322,7 +322,7 @@ describe('installXhrHook', () => {
     expect(XMLHttpRequest.prototype.send).toBe(before.send);
   });
 
-  it('rinuncia senza lanciare se i descrittori attesi non esistono', () => {
+  it('gives up without throwing if expected descriptors do not exist', () => {
     class Bare {
       open(): void {}
       send(): void {}
@@ -339,20 +339,20 @@ describe('installHooks', () => {
     delete page().ytInitialPlayerResponse;
   });
 
-  it('è idempotente: la seconda installazione non fa nulla', () => {
+  it('is idempotent: second installation does nothing', () => {
     const first = installHooks(passthrough);
     const patched = window.fetch;
 
     const second = installHooks(stripVideo());
-    expect(window.fetch).toBe(patched); // nessun doppio wrapping
+    expect(window.fetch).toBe(patched); // no double wrapping
 
-    second(); // la disinstallazione della seconda è no-op
+    second(); // uninstall of second is no-op
     expect(window.fetch).toBe(patched);
 
     first();
   });
 
-  it('la disinstallazione libera la sentinella', () => {
+  it('uninstall releases sentinel', () => {
     const uninstall = installHooks(passthrough);
     expect(page().__ytAudioOnlyHooksInstalled).toBe(true);
     uninstall();

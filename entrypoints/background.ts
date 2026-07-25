@@ -1,11 +1,11 @@
 /**
  * Service worker. PLAN.md §6.
  *
- * ★ Tutti i listener al TOP LEVEL e sincroni: in MV3 il worker viene terminato,
- *   e alla riattivazione gli eventi arrivano prima che un listener registrato
- *   dentro una callback asincrona esista (anti-pattern dell'originale).
+ * ★ All listeners registered synchronously at TOP LEVEL: in MV3 worker gets terminated,
+ *   and upon reactivation events arrive before any listener registered
+ *   inside an async callback exists (anti-pattern in original extension).
  *
- * ★ NESSUNA richiesta di rete. È solo una macchina a stati.
+ * ★ NO network requests. Pure state machine.
  */
 
 import type { Browser } from 'wxt/browser';
@@ -49,24 +49,22 @@ export default defineBackground(() => {
     void removeTabState(tabId);
   });
 
-  // ★ Correzione a PLAN.md §6: NON registriamo `tabs.onUpdated` né
+  // ★ Correction to PLAN.md §6: We DO NOT register `tabs.onUpdated` or
   //   `tabs.onActivated`.
   //
-  //   Il piano prevedeva `tabs.onUpdated.addListener(cb, { urls, properties })`,
-  //   ma il secondo parametro di filtro è un'estensione solo-Firefox: su Chrome
-  //   `tabs.onUpdated` non accetta filtri, quindi lì il worker si sveglierebbe a
-  //   ogni navigazione di ogni scheda — esattamente ciò che il piano voleva
-  //   evitare.
+  //   The plan suggested `tabs.onUpdated.addListener(cb, { urls, properties })`,
+  //   but the second filter parameter is a Firefox-only extension: on Chrome
+  //   `tabs.onUpdated` accepts no filters, waking up worker on every navigation
+  //   of every tab — exactly what the plan aimed to avoid.
   //
-  //   Non servono: il badge è per-scheda e il browser lo ricorda, quindi
-  //   `onActivated` non ha nulla da aggiornare; e ogni caricamento di pagina
-  //   YouTube manda già `GET_STATE`, che passa da `resolve()` e applica il
-  //   badge. Risultato: meno risvegli del worker di quanti ne avrebbe avuti il
-  //   listener filtrato, e nessuna API non portabile.
+  //   They are unnecessary: badge is per-tab and remembered by browser, so
+  //   `onActivated` has nothing to update; and every YouTube page load
+  //   already sends `GET_STATE`, going through `resolve()` to set badge.
+  //   Result: fewer worker wakeups and no unportable APIs.
 
   browser.runtime.onMessage.addListener(handleMessage);
 
-  // Le impostazioni cambiano → tutte le schede YouTube vanno riallineate.
+  // Settings change → all YouTube tabs must re-align.
   browser.storage.onChanged.addListener((_changes, area) => {
     if (area !== 'sync') return;
     void broadcastToAllTabs();
@@ -74,8 +72,8 @@ export default defineBackground(() => {
 });
 
 /**
- * Unico punto di dispatch (§8). Restituisce `true` solo quando risponderà in
- * modo asincrono, come richiede `runtime.onMessage`.
+ * Single dispatch point (§8). Returns `true` only when responding
+ * asynchronously as required by `runtime.onMessage`.
  */
 function handleMessage(
   message: unknown,
@@ -84,9 +82,9 @@ function handleMessage(
 ): boolean {
   if (!isMessage(message)) return false;
 
-  // In Fase 1 ogni messaggio del protocollo nasce in un content script, quindi
-  // la scheda è sempre nota. Il popup (Fase 2) non passa da qui: dovrà indicare
-  // il `tabId` esplicitamente, perché per lui `sender.tab` è `undefined`.
+  // In Phase 1 every protocol message originates from a content script, so
+  // tab is always known. Popup (Phase 2) does not come through here: it provides
+  // `tabId` explicitly because `sender.tab` is `undefined` for popups.
   const tabId = sender.tab?.id;
   if (tabId === undefined) return false;
   const url = sender.tab?.url;
@@ -109,9 +107,9 @@ function handleMessage(
       return false;
 
     case 'REPORT_SCHEMA_VIOLATION':
-      // Contatore locale (§12)
+      // Local counter (§12)
       void recordSchemaViolation(message.violation);
-      logger.warn('violazione di schema', message.violation);
+      logger.warn('schema violation', message.violation);
       return false;
   }
 }
@@ -128,7 +126,7 @@ async function toggleTab(tabId: number, url: string | undefined): Promise<Resolv
   const current = resolveEnabled(settings.mode, tabState, settings, url);
   const next = await setTabState(tabId, { enabled: !current, lastAppliedAt: Date.now() });
   const resolved = await resolve(tabId, url);
-  logger.debug(`toggle scheda ${tabId}: ${current} → ${resolved.state.enabled}`, next);
+  logger.debug(`toggle tab ${tabId}: ${current} → ${resolved.state.enabled}`, next);
   await notifyTab(tabId, resolved);
   return resolved;
 }
@@ -147,13 +145,13 @@ async function applyBadge(tabId: number, enabled: boolean, mode: string): Promis
       tabId,
       title:
         mode === 'off'
-          ? 'YouTube Audio Only — disattivata nelle opzioni'
+          ? 'YouTube Bandwidth Saver — disabled in options'
           : enabled
-            ? 'YouTube Audio Only — attiva in questa scheda'
-            : 'YouTube Audio Only — disattivata in questa scheda',
+            ? 'YouTube Bandwidth Saver — active in this tab'
+            : 'YouTube Bandwidth Saver — disabled in this tab',
     });
   } catch {
-    /* la scheda può essere già chiusa */
+    /* tab might already be closed */
   }
 }
 
@@ -162,8 +160,8 @@ async function notifyTab(tabId: number, resolved: ResolvedState): Promise<void> 
   try {
     await browser.tabs.sendMessage(tabId, broadcast);
   } catch {
-    // Nessun content script in ascolto (pagina non-YouTube o non ancora
-    // caricata). Non è un errore.
+    // No content script listening (non-YouTube page or not yet loaded).
+    // Not an error.
   }
 }
 

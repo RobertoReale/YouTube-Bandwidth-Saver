@@ -11,9 +11,17 @@ export interface PlayerButton {
   readonly updateState: (enabled: boolean) => void;
 }
 
+function findElementBySelectors(root: ParentNode, selectors: readonly string[]): Element | null {
+  for (const selector of selectors) {
+    const el = root.querySelector(selector);
+    if (el) return el;
+  }
+  return null;
+}
+
 /**
- * RF-3: Pulsante nel player YouTube.
- * Iniettato in .ytp-right-controls, sopravvive alle navigazioni SPA.
+ * RF-3: Button inside YouTube player.
+ * Injected into .ytp-right-controls, survives SPA navigations.
  */
 export function createPlayerButton(options: PlayerButtonOptions): PlayerButton {
   let buttonEl: HTMLButtonElement | null = null;
@@ -23,21 +31,13 @@ export function createPlayerButton(options: PlayerButtonOptions): PlayerButton {
     if (options.signal.aborted) return;
     if (buttonEl && options.root.body.contains(buttonEl)) return;
 
-    // Troviamo i controlli destri
-    let rightControls: Element | null = null;
-    for (const selector of DOM.rightControls) {
-      rightControls = options.root.querySelector(selector);
-      if (rightControls) break;
-    }
-
+    const rightControls = findElementBySelectors(options.root, DOM.rightControls);
     if (!rightControls) return;
 
-    // Crea il bottone
     buttonEl = options.root.createElement('button');
     buttonEl.className = 'ytp-button yt-bandwidth-saver-btn';
     buttonEl.setAttribute('aria-pressed', isEnabled ? 'true' : 'false');
-    buttonEl.setAttribute('title', 'Risparmio Banda (Alt+A)');
-
+    buttonEl.setAttribute('title', 'Bandwidth Saver (Alt+A)');
     buttonEl.innerHTML = isEnabled ? ICONS.bandwidthSaver : ICONS.bandwidthSaverOff;
 
     buttonEl.addEventListener(
@@ -48,13 +48,7 @@ export function createPlayerButton(options: PlayerButtonOptions): PlayerButton {
       { signal: options.signal },
     );
 
-    // Inseriamo prima del bottone impostazioni se esiste, altrimenti in fondo
-    let settingsButton: Element | null = null;
-    for (const selector of DOM.settingsButton) {
-      settingsButton = rightControls.querySelector(selector);
-      if (settingsButton) break;
-    }
-
+    const settingsButton = findElementBySelectors(rightControls, DOM.settingsButton);
     if (settingsButton) {
       rightControls.insertBefore(buttonEl, settingsButton);
     } else {
@@ -62,7 +56,7 @@ export function createPlayerButton(options: PlayerButtonOptions): PlayerButton {
     }
   };
 
-  // Osserva l'albero per iniettare il bottone quando appare il player
+  // Observe tree to inject button when player appears
   const observer = new MutationObserver(() => {
     injectButton();
   });
@@ -78,11 +72,11 @@ export function createPlayerButton(options: PlayerButtonOptions): PlayerButton {
     buttonEl = null;
   });
 
-  // Re-inietta dopo SPA navigation
+  // Re-inject after SPA navigation
   options.root.defaultView?.addEventListener(
     YT_EVENTS.navigateFinish,
     () => {
-      // Un piccolo delay perché i controlli potrebbero essere ridisegnati da YouTube
+      // Small delay because controls might be redrawn by YouTube
       setTimeout(injectButton, 500);
     },
     { signal: options.signal },

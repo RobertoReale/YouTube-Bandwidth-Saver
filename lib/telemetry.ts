@@ -9,16 +9,16 @@ export async function recordSchemaViolation(violation: SchemaViolation): Promise
     const data = await browser.storage.local.get(KEY);
     const violations = (data[KEY] || []) as SchemaViolation[];
 
-    // Teniamo solo le ultime 50 per evitare di riempire lo storage
+    // Keep only the last 50 to avoid filling storage
     violations.push(violation);
     if (violations.length > 50) {
       violations.shift();
     }
 
     await browser.storage.local.set({ [KEY]: violations });
-    logger.warn('SchemaViolation registrata in locale:', violation);
+    logger.warn('SchemaViolation recorded locally:', violation);
   } catch (err) {
-    logger.error('Errore durante il salvataggio della violazione', err);
+    logger.error('Error saving violation', err);
   }
 }
 
