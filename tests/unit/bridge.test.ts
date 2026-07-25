@@ -50,7 +50,7 @@ describe('ISOLATED ↔ MAIN bridge', () => {
   it('ISOLATED receives MAIN messages after handshake', async () => {
     const received: MainToIsolated[] = [];
     createIsolatedBridge((message) => received.push(message), controller().signal, target);
-    const main = createMainBridge(() => undefined, controller().signal, target);
+    createMainBridge(() => undefined, controller().signal, target);
 
     await flush();
     // No payloads sent by main anymore other than hello, which is internal.

@@ -41,7 +41,7 @@ export default defineContentScript({
 
     // 2. Bridge with ISOLATED world holding true state.
     let onEnabledChange: (next: boolean) => void = () => {};
-    const bridge = createMainBridge((next) => {
+    createMainBridge((next) => {
       enabled = next;
       onEnabledChange(next);
     }, lifetime.signal);
