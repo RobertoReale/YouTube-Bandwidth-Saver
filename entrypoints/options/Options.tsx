@@ -89,24 +89,6 @@ export function Options() {
         <h2 class="group-title" style="margin-top:0; font-size: 16px; margin-bottom: 8px;">
           Advanced
         </h2>
-        <label class="setting-item">
-          <div class="setting-info">
-            <span class="setting-title">In-player button</span>
-            <span class="setting-desc">
-              Show quick toggle button directly inside the YouTube player.
-            </span>
-          </div>
-          <div class="setting-control">
-            <input
-              type="checkbox"
-              class="toggle-input"
-              checked={settings.showPlayerButton}
-              onChange={(e) =>
-                updateSetting('showPlayerButton', (e.target as HTMLInputElement).checked)
-              }
-            />
-          </div>
-        </label>
 
         <label class="setting-item">
           <div class="setting-info">

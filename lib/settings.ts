@@ -6,7 +6,6 @@ import type { Mode, Settings } from './types';
 export const DEFAULT_SETTINGS: Settings = {
   mode: 'per-tab',
   showThumbnail: false, // default OFF: thumbnail costs bandwidth (RF-4)
-  showPlayerButton: true,
   autoEnableOnMusic: true,
   excludedChannels: [],
 };
@@ -27,10 +26,6 @@ export function normalizeSettings(raw: unknown): Settings {
       typeof input.showThumbnail === 'boolean'
         ? input.showThumbnail
         : DEFAULT_SETTINGS.showThumbnail,
-    showPlayerButton:
-      typeof input.showPlayerButton === 'boolean'
-        ? input.showPlayerButton
-        : DEFAULT_SETTINGS.showPlayerButton,
     autoEnableOnMusic:
       typeof input.autoEnableOnMusic === 'boolean'
         ? input.autoEnableOnMusic
