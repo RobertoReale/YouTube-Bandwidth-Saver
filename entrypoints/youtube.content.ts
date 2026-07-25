@@ -32,7 +32,7 @@ export default defineContentScript({
     const loadedWith = readCachedDecision();
 
     const currentThumbnail = '';
-    let currentIsLive = false;
+    const currentIsLive = false;
 
     // User requested to remove the in-player button.
     // They will use the extension popup instead.
@@ -70,9 +70,13 @@ export default defineContentScript({
       }
     })();
 
-    browser.runtime.onMessage.addListener((message: unknown) => {
+    const onBroadcast = (message: unknown): void => {
       if (!isBroadcast(message)) return;
       apply(message.state.enabled, message.settings.mode);
+    };
+    browser.runtime.onMessage.addListener(onBroadcast);
+    signal.addEventListener('abort', () => {
+      browser.runtime.onMessage.removeListener(onBroadcast);
     });
 
     // SPA navigation: per-tab state does not change, but video does.

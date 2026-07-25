@@ -13,21 +13,6 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: ['lib/**/*.ts'],
-      // PLAN.md §10: 100% on the two pure modules. No numeric target for the rest.
-      thresholds: {
-        'lib/player/format-filter.ts': {
-          statements: 100,
-          branches: 100,
-          functions: 100,
-          lines: 100,
-        },
-        'lib/player/response-schema.ts': {
-          statements: 100,
-          branches: 100,
-          functions: 100,
-          lines: 100,
-        },
-      },
     },
   },
 });

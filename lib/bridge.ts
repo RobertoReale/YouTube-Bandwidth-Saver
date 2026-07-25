@@ -35,8 +35,7 @@ export interface BridgeTarget {
 }
 
 /** MAIN → ISOLATED. Closed set. */
-export type MainToIsolated =
-  | { readonly kind: 'hello'; readonly token: string };
+export type MainToIsolated = { readonly kind: 'hello'; readonly token: string };
 
 /** ISOLATED → MAIN. Closed set. */
 export type IsolatedToMain = { readonly kind: 'set-enabled'; readonly enabled: boolean };
