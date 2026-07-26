@@ -7,8 +7,8 @@ The extension DOES NOT collect, store, or transmit any personal data, browsing h
 
 ## Permission Usage
 The extension requires the following permissions to operate:
-- **`storage`**: Used EXCLUSIVELY locally within your browser to store user preferences (e.g., active mode, thumbnail visibility settings).
-- **Access to `*://*.youtube.com/*` and `*://music.youtube.com/*`**: Required to inject player interface controls (button, overlay) and adjust playback quality directly on the YouTube web application.
+- **`storage`**: Used EXCLUSIVELY locally within your browser to store user preferences (`storage.sync`) and per-tab toggle state (`storage.session`, cleared on browser restart).
+- **Access to `*://www.youtube.com/*` and `*://music.youtube.com/*`**: Required to inject the overlay and adjust playback quality directly on the YouTube web application.
 
 ## Network Requests
 The extension operates entirely client-side on your device by interacting locally with the web page. **The extension makes no additional network requests.**

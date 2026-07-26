@@ -17,7 +17,7 @@ To bypass this constraint safely (Plan C), the extension **intercepts HTML5 play
 - **No custom network requests.** No extra fetches for watch pages, `base.js`, or HEAD verification requests.
 - **No network interception.** To avoid triggering YouTube's anti-adblock systems, we do not monkeypatch `fetch`, `XMLHttpRequest`, or global variables like `ytInitialPlayerResponse`. We use native HTML5 player APIs instead.
 - **No `eval`, no remote code.** We do not reconstruct URLs or decipher signatures; YouTube handles media delivery natively.
-- **No server telemetry.** Saved MB counters and logs are stored *strictly locally* (`storage.session` and `storage.local`). No data ever leaves your device.
+- **No server telemetry.** Settings and per-tab state are stored *strictly locally* (`storage.sync` and `storage.session`). No data ever leaves your device.
 - **No downloading, no ad blocking.** Out of scope for a focused utility extension. (We recommend uBlock Origin Lite if you want to block video ads).
 
 ## Development

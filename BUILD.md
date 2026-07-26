@@ -24,13 +24,13 @@ To guarantee transparency and security for extension store listings, here are th
    ```bash
    pnpm zip
    ```
-   *The output package will be located at `.output/YouTube-Bandwidth-Saver-chrome.zip`.*
+   *The output package will be located at `.output/yt-bandwidth-saver-<version>-chrome.zip`.*
 
-4. Create package for Firefox:
+4. Create package for Firefox (add `--sources` to also produce the source archive for store review):
    ```bash
-   pnpm zip -b firefox
+   pnpm zip -b firefox --sources
    ```
-   *The output package will be located at `.output/YouTube-Bandwidth-Saver-firefox.zip`.*
+   *The output packages will be located at `.output/yt-bandwidth-saver-<version>-firefox.zip` and `.output/yt-bandwidth-saver-<version>-sources.zip`.*
 
 ## Integrity Verification
 Because the extension uses WXT, source code is compiled and bundled for optimal performance. The complete original TypeScript source code is fully inspectable in this GitHub repository at the commit tag matching each release version.
