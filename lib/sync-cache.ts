@@ -3,22 +3,22 @@
  *
  * The problem: at `document_start` MAIN world must decide before YouTube inline
  * script assigns `ytInitialPlayerResponse`. Single source of truth is service
- * worker (§7), but querying it is async, and `PLAN.md` §11 forbids
+ * worker, but querying it is async, and we forbid
  * any `await` prior to hook installation.
  *
  * The solution: `sessionStorage` and `localStorage` are readable
  * synchronously, and ISOLATED content script shares page origin.
  *
  *  - `sessionStorage` is per-browsing-context → exact semantics for per-tab
- *    state of RF-2, surviving same-tab reloads.
+ *    state, surviving same-tab reloads.
  *  - `localStorage` is shared across tabs → only needed for `always`
  *    mode, where decision does not depend on tab.
  *
  * Service worker remains single source of truth: these values are a cache
  * that only serves to win race against inline script. If they diverge,
- * ISOLATED world corrects cache as soon as worker responds (§8).
+ * ISOLATED world corrects cache as soon as worker responds.
  *
- * Security note (§13): page can read and write these values. Maximum
+ * Security note: page can read and write these values. Maximum
  * damage is turning audio-only mode on or off, which is not a privilege:
  * no sensitive data passes through here, and decision is reconciled
  * with worker on every load anyway.

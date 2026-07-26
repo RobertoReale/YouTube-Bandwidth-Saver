@@ -6,17 +6,16 @@ export interface OverlayOptions {
 }
 
 export interface Overlay {
-  readonly updateState: (enabled: boolean, isLive: boolean, thumbnailUrl?: string) => void;
+  readonly updateState: (enabled: boolean, isLive: boolean) => void;
 }
 
 /**
- * RF-4: Visual overlay to cover the 144p stream.
+ * Visual overlay to cover the 144p stream.
  */
 export function createOverlay(options: OverlayOptions): Overlay {
   let overlayEl: HTMLDivElement | null = null;
   let currentEnabled = false;
   let currentIsLive = false;
-  let currentThumbnail = '';
 
   const injectOverlay = (): void => {
     if (options.signal.aborted) return;
@@ -68,12 +67,8 @@ export function createOverlay(options: OverlayOptions): Overlay {
     } else {
       text.innerHTML =
         'Bandwidth Saver Active<br><span style="font-size: 12px; opacity: 0.7; display: block; margin-top: 8px; font-weight: normal;">(Right-click extension icon for options)</span>';
-      if (currentThumbnail) {
-        bg.style.backgroundImage = `url("${currentThumbnail}")`;
-      } else {
-        bg.style.backgroundImage = 'none';
-        bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
-      }
+      bg.style.backgroundImage = 'none';
+      bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
     }
   };
 
@@ -95,10 +90,9 @@ export function createOverlay(options: OverlayOptions): Overlay {
   });
 
   return {
-    updateState(enabled: boolean, isLive: boolean, thumbnailUrl?: string) {
+    updateState(enabled: boolean, isLive: boolean) {
       currentEnabled = enabled;
       currentIsLive = isLive;
-      if (thumbnailUrl) currentThumbnail = thumbnailUrl;
 
       if (enabled && !overlayEl) {
         injectOverlay();

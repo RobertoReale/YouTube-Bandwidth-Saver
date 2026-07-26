@@ -1,11 +1,10 @@
-/** PLAN.md §7 — state model. Shared types across all three worlds. */
+/** Shared types across all three worlds. */
 
 export type Mode = 'off' | 'per-tab' | 'always';
 
 /** Persistent preferences (`storage.sync`). */
 export interface Settings {
   mode: Mode;
-  showThumbnail: boolean;
   showOverlay: boolean;
   autoEnableOnMusic: boolean;
   excludedChannels: readonly string[];
@@ -16,7 +15,7 @@ export interface TabState {
   enabled: boolean;
   videoId: string | null;
   isLive: boolean;
-  /** Local estimate, NEVER transmitted (§13). */
+  /** Local estimate, NEVER transmitted. */
   bytesSaved: number;
   lastAppliedAt: number;
 }
@@ -29,7 +28,7 @@ export type SkipReason =
   | 'no-video-formats'
   | 'no-audio-formats'
   | 'drm-protected'
-  /** SABR: server decides stream, formats are metadata. See R1. */
+  /** Server decides stream, formats are metadata. */
   | 'server-abr'
   | 'disabled'
   | 'internal-error';
@@ -45,7 +44,7 @@ export interface FilterStats {
 
 /**
  * Discrepancy between expected schema and observed schema.
- * Feeds LOCAL counter in §12. Never leaves device.
+ * Feeds LOCAL counter. Never leaves device.
  */
 export interface SchemaViolation {
   /** Field path, e.g. `streamingData.adaptiveFormats`. */

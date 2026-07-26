@@ -1,5 +1,5 @@
 /**
- * Service worker. PLAN.md §6.
+ * Service worker.
  *
  * ★ All listeners registered synchronously at TOP LEVEL: in MV3 worker gets terminated,
  *   and upon reactivation events arrive before any listener registered
@@ -79,18 +79,7 @@ export default defineBackground(() => {
     void removeTabState(tabId);
   });
 
-  // ★ Correction to PLAN.md §6: We DO NOT register `tabs.onUpdated` or
-  //   `tabs.onActivated`.
-  //
-  //   The plan suggested `tabs.onUpdated.addListener(cb, { urls, properties })`,
-  //   but the second filter parameter is a Firefox-only extension: on Chrome
-  //   `tabs.onUpdated` accepts no filters, waking up worker on every navigation
-  //   of every tab — exactly what the plan aimed to avoid.
-  //
-  //   They are unnecessary: badge is per-tab and remembered by browser, so
-  //   `onActivated` has nothing to update; and every YouTube page load
-  //   already sends `GET_STATE`, going through `resolve()` to set badge.
-  //   Result: fewer worker wakeups and no unportable APIs.
+
 
   browser.runtime.onMessage.addListener(handleMessage);
 
@@ -102,7 +91,7 @@ export default defineBackground(() => {
 });
 
 /**
- * Single dispatch point (§8). Returns `true` only when responding
+ * Single dispatch point. Returns `true` only when responding
  * asynchronously as required by `runtime.onMessage`.
  */
 function handleMessage(
@@ -137,7 +126,7 @@ function handleMessage(
       return false;
 
     case 'REPORT_SCHEMA_VIOLATION':
-      // Local counter (§12)
+      // Local counter
       void recordSchemaViolation(message.violation);
       logger.warn('schema violation', message.violation);
       return false;

@@ -1,11 +1,10 @@
-/** PLAN.md §7 — persistent preferences in `storage.sync`. */
+/** Persistent preferences in `storage.sync`. */
 
 import { browser } from 'wxt/browser';
 import type { Mode, Settings } from './types';
 
 export const DEFAULT_SETTINGS: Settings = {
   mode: 'per-tab',
-  showThumbnail: false, // default OFF: thumbnail costs bandwidth (RF-4)
   showOverlay: true, // default ON: hides 144p video
   autoEnableOnMusic: true,
   excludedChannels: [],
@@ -23,10 +22,6 @@ export function normalizeSettings(raw: unknown): Settings {
   const input = raw as Record<string, unknown>;
   const normalized: Settings = {
     mode: isMode(input.mode) ? input.mode : DEFAULT_SETTINGS.mode,
-    showThumbnail:
-      typeof input.showThumbnail === 'boolean'
-        ? input.showThumbnail
-        : DEFAULT_SETTINGS.showThumbnail,
     showOverlay:
       typeof input.showOverlay === 'boolean'
         ? input.showOverlay
@@ -39,11 +34,6 @@ export function normalizeSettings(raw: unknown): Settings {
       ? input.excludedChannels.filter((entry): entry is string => typeof entry === 'string')
       : DEFAULT_SETTINGS.excludedChannels,
   };
-
-  // Prevent conflict: thumbnail cannot be shown without the overlay
-  if (!normalized.showOverlay) {
-    normalized.showThumbnail = false;
-  }
 
   return normalized;
 }

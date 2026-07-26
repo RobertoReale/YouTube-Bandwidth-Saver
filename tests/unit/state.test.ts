@@ -67,15 +67,11 @@ describe('normalizeSettings', () => {
   it('does not trust disk: any wrong type field reverts to default', () => {
     const result = normalizeSettings({
       mode: 'made-up-mode',
-      showThumbnail: 'yes',
-      showPlayerButton: 0,
       autoEnableOnMusic: null,
       excludedChannels: ['ok', 42, null],
     });
 
     expect(result.mode).toBe(DEFAULT_SETTINGS.mode);
-    expect(result.showThumbnail).toBe(false);
-    expect(result.showPlayerButton).toBe(true);
     expect(result.autoEnableOnMusic).toBe(true);
     expect(result.excludedChannels).toEqual(['ok']);
   });
@@ -90,14 +86,10 @@ describe('normalizeSettings', () => {
   });
 
   it('preserves valid values', () => {
-    expect(normalizeSettings({ mode: 'always', showThumbnail: true }).mode).toBe('always');
+    expect(normalizeSettings({ mode: 'always' }).mode).toBe('always');
     expect(normalizeSettings({ mode: 'off' }).mode).toBe('off');
-    expect(normalizeSettings({ showThumbnail: true }).showThumbnail).toBe(true);
-    expect(normalizeSettings({ showPlayerButton: false }).showPlayerButton).toBe(false);
     expect(normalizeSettings({ autoEnableOnMusic: false }).autoEnableOnMusic).toBe(false);
   });
 
-  it('default of showThumbnail is OFF: thumbnail costs bandwidth', () => {
-    expect(DEFAULT_SETTINGS.showThumbnail).toBe(false);
-  });
+
 });

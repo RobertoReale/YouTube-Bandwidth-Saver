@@ -1,5 +1,5 @@
 /**
- * ISOLATED world. PLAN.md §5.
+ * ISOLATED world.
  *
  * Has access to `chrome.*` APIs but not page variables. Performs three tasks:
  *  1. requests resolved state for this tab from service worker;
@@ -7,7 +7,7 @@
  *     `document_start` for this tab decides without waiting;
  *  3. reports stats back to worker that MAIN world sends it.
  *
- * Player UI (RF-3) and overlay (RF-4) are Phase 2.
+ * Player UI and overlay are Phase 2.
  */
 
 import { createIsolatedBridge } from '../lib/bridge';
@@ -31,7 +31,6 @@ export default defineContentScript({
     /** With which decision MAIN world actually started the page. */
     const loadedWith = readCachedDecision();
 
-    const currentThumbnail = '';
     const currentIsLive = false;
 
     // User requested to remove the in-player button.
@@ -53,7 +52,7 @@ export default defineContentScript({
       writeCachedDecision(enabled, settings.mode);
       bridge.send({ kind: 'set-enabled', enabled });
 
-      overlay.updateState(enabled && settings.showOverlay, currentIsLive, currentThumbnail);
+      overlay.updateState(enabled && settings.showOverlay, currentIsLive);
 
       // MAIN world already decided at `document_start`. If decision
       // changed, player already negotiated wrong stream: reload needed.

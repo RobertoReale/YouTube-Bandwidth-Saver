@@ -1,5 +1,5 @@
 /**
- * PLAN.md §7 — per-tab state. Fixes issue #3 in original
+ * Per-tab state.
  * (a single global boolean for all tabs, open since 2017).
  *
  * `storage.session` does not touch disk, resets on browser restart
@@ -87,8 +87,7 @@ export async function sweepClosedTabs(): Promise<number> {
 
 /**
  * Decides if a tab should be filtered, combining mode and per-tab state.
- * Single point where this decision is made (§7: single source of
- * truth, content scripts never derive it on their own).
+ * Single point where this decision is made.
  */
 export function resolveEnabled(
   mode: Mode,

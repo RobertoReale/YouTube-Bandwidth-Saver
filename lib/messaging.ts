@@ -1,4 +1,4 @@
-/** PLAN.md §8 — discriminated union and single dispatch point. */
+/** Discriminated union and single dispatch point. */
 
 import { browser } from 'wxt/browser';
 import type { FilterStats, SchemaViolation, Settings, TabState } from './types';

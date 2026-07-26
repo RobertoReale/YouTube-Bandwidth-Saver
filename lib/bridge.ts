@@ -1,5 +1,5 @@
 /**
- * PLAN.md §8 — ISOLATED ↔ MAIN bridge.
+ * ISOLATED <-> MAIN bridge.
  *
  * `window.postMessage` is visible to the page and any other script, so:
  *  - every message carries a per-session generated token;

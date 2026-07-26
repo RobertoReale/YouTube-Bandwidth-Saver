@@ -1,16 +1,16 @@
 /**
- * Plan C of Risk A (`PLAN.md` §15): forcing minimal quality.
+ * Forcing minimal quality.
  *
  * Why we no longer filter formats: as of 2026-07-25 YouTube delivers
- * `serverAbrStreamingUrl` and no direct URLs on tracks (RESEARCH.md R1).
+ * `serverAbrStreamingUrl` and no direct URLs on tracks.
  * Server decides which bytes to send, so the only lever client
  * really has is **telling server it wants the lowest quality**.
  *
  * Honesty on result: this does NOT zero out video bytes, it reduces them. It is the
  * difference between plan C and plan D, and must be stated in UI and
- * store listing (`PUBLISHING.md`: no unmeasured numbers).
+ * store listing (no unmeasured numbers).
  *
- * Rules respected: no polling (`PLAN.md` §11), every listener and observer
+ * Rules respected: no polling, every listener and observer
  * has its teardown, and any error is fail-open — if player API
  * changes, YouTube continues operating normally.
  */
@@ -105,7 +105,7 @@ export interface QualityEnforcer {
  * on every SPA navigation and on every new media loaded.
  *
  * YouTube resets quality on every video — reason why a single
- * startup call is not enough, as plan already noted (§2, "YouTube
+ * startup call is not enough, as already noted ("YouTube
  * resets quality on every video").
  */
 export function createQualityEnforcer(
@@ -125,7 +125,7 @@ export function createQualityEnforcer(
 
   /**
    * Player doesn't exist yet: we wait for it with an observer that turns off
-   * as soon as found. No `setInterval` (§11).
+   * as soon as found. No `setInterval`.
    */
   const waitForPlayer = (): void => {
     if (observer !== null || deps.signal.aborted) return;

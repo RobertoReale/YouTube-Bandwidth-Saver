@@ -1,5 +1,5 @@
 /**
- * PLAN.md §12 — ALL strings that depend on YouTube live here.
+ * ALL strings that depend on YouTube live here.
  *
  * Rule: if a string can change because YouTube changes, it lives in this file,
  * with a comment on where and when it was observed. When YouTube changes
@@ -40,7 +40,7 @@ export const YT_EVENTS = {
 
 /**
  * DOM Selectors. Each entry is a chain of fallbacks tried in order.
- * Not used in Phase 1 (no UI in player): needed from Phase 2, RF-3.
+ * Not used in Phase 1 (no UI in player): needed from Phase 2.
  */
 export const DOM = {
   rightControls: ['.ytp-right-controls'],

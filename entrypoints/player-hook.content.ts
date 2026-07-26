@@ -1,5 +1,5 @@
 /**
- * MAIN world, `document_start`. PLAN.md §5.
+ * MAIN world, `document_start`.
  *
  * This script has no access to `chrome.*` APIs. Initial decision comes
  * from synchronous cache (`lib/sync-cache.ts`), then gets corrected by ISOLATED
@@ -27,7 +27,7 @@ export default defineContentScript({
     // 1. Synchronous decision. Default `false`: without info, normal YouTube.
     let enabled = readCachedDecision();
 
-    /** Lifetime of all listeners and observers in this frame (§11). */
+    /** Lifetime of all listeners and observers in this frame. */
     const lifetime = new AbortController();
 
     // Diagnostics: exists ONLY in development builds.
