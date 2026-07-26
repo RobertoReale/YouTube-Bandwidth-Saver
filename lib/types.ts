@@ -6,6 +6,7 @@ export type Mode = 'off' | 'per-tab' | 'always';
 export interface Settings {
   mode: Mode;
   showThumbnail: boolean;
+  showOverlay: boolean;
   autoEnableOnMusic: boolean;
   excludedChannels: readonly string[];
 }

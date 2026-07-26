@@ -111,6 +111,25 @@ export function Options() {
 
         <label class="setting-item">
           <div class="setting-info">
+            <span class="setting-title">Show black overlay</span>
+            <span class="setting-desc">
+              Hides the pixelated 144p video with a clean black overlay. Disable this to see the video.
+            </span>
+          </div>
+          <div class="setting-control">
+            <input
+              type="checkbox"
+              class="toggle-input"
+              checked={settings.showOverlay}
+              onChange={(e) =>
+                updateSetting('showOverlay', (e.target as HTMLInputElement).checked)
+              }
+            />
+          </div>
+        </label>
+
+        <label class="setting-item">
+          <div class="setting-info">
             <span class="setting-title">Auto-enable on YouTube Music</span>
             <span class="setting-desc">
               Treat YouTube Music as always active to save bandwidth.

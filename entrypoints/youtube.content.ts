@@ -49,11 +49,11 @@ export default defineContentScript({
       }
     }, signal);
 
-    const apply = (enabled: boolean, mode: import('../lib/types').Mode): void => {
-      writeCachedDecision(enabled, mode);
+    const apply = (enabled: boolean, settings: import('../lib/types').Settings): void => {
+      writeCachedDecision(enabled, settings.mode);
       bridge.send({ kind: 'set-enabled', enabled });
 
-      overlay.updateState(enabled, currentIsLive, currentThumbnail);
+      overlay.updateState(enabled && settings.showOverlay, currentIsLive, currentThumbnail);
 
       // MAIN world already decided at `document_start`. If decision
       // changed, player already negotiated wrong stream: reload needed.
@@ -64,7 +64,7 @@ export default defineContentScript({
     void (async () => {
       try {
         const { state, settings } = await sendMessage({ type: 'GET_STATE' });
-        apply(state.enabled, settings.mode);
+        apply(state.enabled, settings);
       } catch (error) {
         logger.warn('state unavailable, page stays as loaded', error);
       }
@@ -72,7 +72,7 @@ export default defineContentScript({
 
     const onBroadcast = (message: unknown): void => {
       if (!isBroadcast(message)) return;
-      apply(message.state.enabled, message.settings.mode);
+      apply(message.state.enabled, message.settings);
     };
     browser.runtime.onMessage.addListener(onBroadcast);
     signal.addEventListener('abort', () => {
