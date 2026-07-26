@@ -21,7 +21,7 @@ function isMode(value: unknown): value is Mode {
 export function normalizeSettings(raw: unknown): Settings {
   if (typeof raw !== 'object' || raw === null) return DEFAULT_SETTINGS;
   const input = raw as Record<string, unknown>;
-  return {
+  const normalized: Settings = {
     mode: isMode(input.mode) ? input.mode : DEFAULT_SETTINGS.mode,
     showThumbnail:
       typeof input.showThumbnail === 'boolean'
@@ -39,6 +39,13 @@ export function normalizeSettings(raw: unknown): Settings {
       ? input.excludedChannels.filter((entry): entry is string => typeof entry === 'string')
       : DEFAULT_SETTINGS.excludedChannels,
   };
+
+  // Prevent conflict: thumbnail cannot be shown without the overlay
+  if (!normalized.showOverlay) {
+    normalized.showThumbnail = false;
+  }
+
+  return normalized;
 }
 
 export async function getSettings(): Promise<Settings> {

@@ -15,7 +15,11 @@ export function Options() {
   }
 
   const updateSetting = async <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    const next = await setSettings({ [key]: value } as Partial<Settings>);
+    const patch: Partial<Settings> = { [key]: value };
+    if (key === 'showOverlay' && value === false) {
+      patch.showThumbnail = false;
+    }
+    const next = await setSettings(patch);
     setSettingsState(next);
 
     setSaved(true);
@@ -90,7 +94,7 @@ export function Options() {
           Advanced
         </h2>
 
-        <label class="setting-item">
+        <label class="setting-item" style={!settings.showOverlay ? 'opacity: 0.5; pointer-events: none;' : ''}>
           <div class="setting-info">
             <span class="setting-title">Background thumbnail</span>
             <span class="setting-desc">
@@ -102,6 +106,7 @@ export function Options() {
               type="checkbox"
               class="toggle-input"
               checked={settings.showThumbnail}
+              disabled={!settings.showOverlay}
               onChange={(e) =>
                 updateSetting('showThumbnail', (e.target as HTMLInputElement).checked)
               }
