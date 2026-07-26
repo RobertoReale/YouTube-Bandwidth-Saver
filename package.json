@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "author": "Roberto Reale",
+  "license": "MIT",
   "description": "Minimizes YouTube video quality to save maximum bandwidth.",
   "type": "module",
   "scripts": {
