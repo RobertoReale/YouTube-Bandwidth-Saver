@@ -7,7 +7,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearCachedDecision, readCachedDecision, writeCachedDecision } from '../../lib/sync-cache';
+import { readCachedDecision, writeCachedDecision } from '../../lib/sync-cache';
 
 describe('synchronous decision cache', () => {
   beforeEach(() => {
@@ -50,15 +50,6 @@ describe('synchronous decision cache', () => {
     expect(readCachedDecision()).toBe(false);
   });
 
-  it('clearCachedDecision resets tab to "undecided"', () => {
-    localStorage.setItem('ytao:mode', 'always');
-    writeCachedDecision(false, 'always');
-    expect(readCachedDecision()).toBe(false);
-
-    clearCachedDecision();
-    expect(readCachedDecision()).toBe(true); // mode decides again
-  });
-
   it('ignores garbage values in per-tab key', () => {
     sessionStorage.setItem('ytao:tab-enabled', 'maybe');
     expect(readCachedDecision()).toBe(false);
@@ -75,6 +66,5 @@ describe('synchronous decision cache', () => {
     expect(() => readCachedDecision()).not.toThrow();
     expect(readCachedDecision()).toBe(false);
     expect(() => writeCachedDecision(true, 'always')).not.toThrow();
-    expect(() => clearCachedDecision()).not.toThrow();
   });
 });

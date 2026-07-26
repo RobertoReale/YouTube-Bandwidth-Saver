@@ -31,8 +31,6 @@ export default defineContentScript({
     /** With which decision MAIN world actually started the page. */
     const loadedWith = readCachedDecision();
 
-    const currentIsLive = false;
-
     // User requested to remove the in-player button.
     // They will use the extension popup instead.
 
@@ -52,7 +50,7 @@ export default defineContentScript({
       writeCachedDecision(enabled, settings.mode);
       bridge.send({ kind: 'set-enabled', enabled });
 
-      overlay.updateState(enabled && settings.showOverlay, currentIsLive);
+      overlay.updateState(enabled && settings.showOverlay);
 
       // MAIN world already decided at `document_start`. If decision
       // changed, player already negotiated wrong stream: reload needed.

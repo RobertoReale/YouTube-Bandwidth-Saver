@@ -68,12 +68,10 @@ describe('normalizeSettings', () => {
     const result = normalizeSettings({
       mode: 'made-up-mode',
       autoEnableOnMusic: null,
-      excludedChannels: ['ok', 42, null],
     });
 
     expect(result.mode).toBe(DEFAULT_SETTINGS.mode);
     expect(result.autoEnableOnMusic).toBe(true);
-    expect(result.excludedChannels).toEqual(['ok']);
   });
 
   it.each([
@@ -90,6 +88,4 @@ describe('normalizeSettings', () => {
     expect(normalizeSettings({ mode: 'off' }).mode).toBe('off');
     expect(normalizeSettings({ autoEnableOnMusic: false }).autoEnableOnMusic).toBe(false);
   });
-
-
 });

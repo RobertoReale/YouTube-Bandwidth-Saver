@@ -7,7 +7,6 @@ export const DEFAULT_SETTINGS: Settings = {
   mode: 'per-tab',
   showOverlay: true, // default ON: hides 144p video
   autoEnableOnMusic: true,
-  excludedChannels: [],
 };
 
 const KEY = 'settings';
@@ -23,16 +22,11 @@ export function normalizeSettings(raw: unknown): Settings {
   const normalized: Settings = {
     mode: isMode(input.mode) ? input.mode : DEFAULT_SETTINGS.mode,
     showOverlay:
-      typeof input.showOverlay === 'boolean'
-        ? input.showOverlay
-        : DEFAULT_SETTINGS.showOverlay,
+      typeof input.showOverlay === 'boolean' ? input.showOverlay : DEFAULT_SETTINGS.showOverlay,
     autoEnableOnMusic:
       typeof input.autoEnableOnMusic === 'boolean'
         ? input.autoEnableOnMusic
         : DEFAULT_SETTINGS.autoEnableOnMusic,
-    excludedChannels: Array.isArray(input.excludedChannels)
-      ? input.excludedChannels.filter((entry): entry is string => typeof entry === 'string')
-      : DEFAULT_SETTINGS.excludedChannels,
   };
 
   return normalized;

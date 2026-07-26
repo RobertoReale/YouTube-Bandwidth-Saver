@@ -64,7 +64,3 @@ export function writeCachedDecision(enabled: boolean, mode: Mode): void {
   write(() => sessionStorage, TAB_KEY, enabled ? '1' : '0');
   write(() => localStorage, MODE_KEY, mode);
 }
-
-export function clearCachedDecision(): void {
-  write(() => sessionStorage, TAB_KEY, null);
-}

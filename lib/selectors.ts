@@ -38,15 +38,9 @@ export const YT_EVENTS = {
   navigateFinish: 'yt-navigate-finish',
 } as const;
 
-/**
- * DOM Selectors. Each entry is a chain of fallbacks tried in order.
- * Not used in Phase 1 (no UI in player): needed from Phase 2.
- */
+/** DOM Selectors. Each entry is a chain of fallbacks tried in order. */
 export const DOM = {
-  rightControls: ['.ytp-right-controls'],
-  settingsButton: ['.ytp-settings-button'],
   moviePlayer: ['#movie_player'],
-  video: ['video.html5-main-video', 'video'],
 } as const;
 
 /** Hosts on which extension operates. Must stay aligned with `host_permissions`. */

@@ -20,7 +20,6 @@ import {
   setTabState,
   sweepClosedTabs,
 } from '../lib/state';
-import { recordSchemaViolation } from '../lib/telemetry';
 
 const MATCHES = SUPPORTED_HOSTS.map((host) => `*://${host}/*`);
 
@@ -79,8 +78,6 @@ export default defineBackground(() => {
     void removeTabState(tabId);
   });
 
-
-
   browser.runtime.onMessage.addListener(handleMessage);
 
   // Settings change → all YouTube tabs must re-align.
@@ -116,20 +113,6 @@ function handleMessage(
     case 'TOGGLE_TAB':
       void toggleTab(tabId, url).then(sendResponse);
       return true;
-
-    case 'REPORT_STATS':
-      void accumulateBytes(tabId, message.stats.estimatedBytesSaved ?? 0);
-      return false;
-
-    case 'REPORT_LIVE':
-      void setTabState(tabId, { isLive: true });
-      return false;
-
-    case 'REPORT_SCHEMA_VIOLATION':
-      // Local counter
-      void recordSchemaViolation(message.violation);
-      logger.warn('schema violation', message.violation);
-      return false;
   }
 }
 
@@ -148,12 +131,6 @@ async function toggleTab(tabId: number, url: string | undefined): Promise<Resolv
   logger.debug(`toggle tab ${tabId}: ${current} → ${resolved.state.enabled}`, next);
   await notifyTab(tabId, resolved);
   return resolved;
-}
-
-async function accumulateBytes(tabId: number, bytes: number): Promise<void> {
-  if (!Number.isFinite(bytes) || bytes <= 0) return;
-  const current = await getTabState(tabId);
-  await setTabState(tabId, { bytesSaved: current.bytesSaved + bytes });
 }
 
 async function applyBadge(tabId: number, enabled: boolean, mode: string): Promise<void> {

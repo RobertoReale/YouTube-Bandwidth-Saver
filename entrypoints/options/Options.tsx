@@ -95,7 +95,8 @@ export function Options() {
           <div class="setting-info">
             <span class="setting-title">Show black overlay</span>
             <span class="setting-desc">
-              Hides the pixelated 144p video with a clean black overlay. Disable this to see the video.
+              Hides the pixelated 144p video with a clean black overlay. Disable this to see the
+              video.
             </span>
           </div>
           <div class="setting-control">
@@ -103,9 +104,7 @@ export function Options() {
               type="checkbox"
               class="toggle-input"
               checked={settings.showOverlay}
-              onChange={(e) =>
-                updateSetting('showOverlay', (e.target as HTMLInputElement).checked)
-              }
+              onChange={(e) => updateSetting('showOverlay', (e.target as HTMLInputElement).checked)}
             />
           </div>
         </label>

@@ -13,7 +13,7 @@ import type { Mode, Settings, TabState } from './types';
 const PREFIX = 'tab:';
 
 export function emptyTabState(): TabState {
-  return { enabled: false, videoId: null, isLive: false, bytesSaved: 0, lastAppliedAt: 0 };
+  return { enabled: false, lastAppliedAt: 0 };
 }
 
 function key(tabId: number): string {
@@ -26,9 +26,6 @@ function normalize(raw: unknown): TabState {
   const base = emptyTabState();
   return {
     enabled: typeof input.enabled === 'boolean' ? input.enabled : base.enabled,
-    videoId: typeof input.videoId === 'string' ? input.videoId : base.videoId,
-    isLive: typeof input.isLive === 'boolean' ? input.isLive : base.isLive,
-    bytesSaved: typeof input.bytesSaved === 'number' ? input.bytesSaved : base.bytesSaved,
     lastAppliedAt:
       typeof input.lastAppliedAt === 'number' ? input.lastAppliedAt : base.lastAppliedAt,
   };

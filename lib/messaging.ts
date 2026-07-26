@@ -1,15 +1,11 @@
 /** Discriminated union and single dispatch point. */
 
 import { browser } from 'wxt/browser';
-import type { FilterStats, SchemaViolation, Settings, TabState } from './types';
+import type { Settings, TabState } from './types';
 
 export type Message =
   // ISOLATED → background
-  | { readonly type: 'GET_STATE' }
-  | { readonly type: 'TOGGLE_TAB' }
-  | { readonly type: 'REPORT_STATS'; readonly stats: Partial<FilterStats> }
-  | { readonly type: 'REPORT_SCHEMA_VIOLATION'; readonly violation: SchemaViolation }
-  | { readonly type: 'REPORT_LIVE' };
+  { readonly type: 'GET_STATE' } | { readonly type: 'TOGGLE_TAB' };
 
 export interface ResolvedState {
   readonly state: TabState;

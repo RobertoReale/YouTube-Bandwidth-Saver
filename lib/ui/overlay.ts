@@ -6,7 +6,7 @@ export interface OverlayOptions {
 }
 
 export interface Overlay {
-  readonly updateState: (enabled: boolean, isLive: boolean) => void;
+  readonly updateState: (enabled: boolean) => void;
 }
 
 /**
@@ -15,7 +15,6 @@ export interface Overlay {
 export function createOverlay(options: OverlayOptions): Overlay {
   let overlayEl: HTMLDivElement | null = null;
   let currentEnabled = false;
-  let currentIsLive = false;
 
   const injectOverlay = (): void => {
     if (options.signal.aborted) return;
@@ -60,16 +59,10 @@ export function createOverlay(options: OverlayOptions): Overlay {
     const bg = overlayEl.querySelector('.yt-bandwidth-saver-bg') as HTMLDivElement;
     const text = overlayEl.querySelector('.yt-bandwidth-saver-text') as HTMLDivElement;
 
-    if (currentIsLive) {
-      text.innerHTML = 'Bandwidth Saver unavailable on live streams';
-      bg.style.backgroundImage = 'none';
-      bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
-    } else {
-      text.innerHTML =
-        'Bandwidth Saver Active<br><span style="font-size: 12px; opacity: 0.7; display: block; margin-top: 8px; font-weight: normal;">(Right-click extension icon for options)</span>';
-      bg.style.backgroundImage = 'none';
-      bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
-    }
+    text.innerHTML =
+      'Bandwidth Saver Active<br><span style="font-size: 12px; opacity: 0.7; display: block; margin-top: 8px; font-weight: normal;">(Right-click extension icon for options)</span>';
+    bg.style.backgroundImage = 'none';
+    bg.style.backgroundColor = 'rgba(0,0,0,0.8)';
   };
 
   const observer = new MutationObserver(() => {
@@ -90,9 +83,8 @@ export function createOverlay(options: OverlayOptions): Overlay {
   });
 
   return {
-    updateState(enabled: boolean, isLive: boolean) {
+    updateState(enabled: boolean) {
       currentEnabled = enabled;
-      currentIsLive = isLive;
 
       if (enabled && !overlayEl) {
         injectOverlay();
