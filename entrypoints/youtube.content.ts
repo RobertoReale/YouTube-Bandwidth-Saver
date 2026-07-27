@@ -71,10 +71,17 @@ export default defineContentScript({
       if (!isBroadcast(message)) return;
       apply(message.state.enabled, message.settings);
     };
-    browser.runtime.onMessage.addListener(onBroadcast);
-    signal.addEventListener('abort', () => {
-      browser.runtime.onMessage.removeListener(onBroadcast);
-    });
+    // After an extension reload/update this script stays alive in the page but
+    // orphaned: `browser.runtime` is gone. Fail silently instead of throwing and
+    // skipping the listeners registered below.
+    if (browser.runtime?.onMessage) {
+      browser.runtime.onMessage.addListener(onBroadcast);
+      signal.addEventListener('abort', () => {
+        browser.runtime.onMessage?.removeListener(onBroadcast);
+      });
+    } else {
+      logger.warn('extension context invalidated, broadcasts unavailable');
+    }
 
     // SPA navigation: per-tab state does not change, but video does.
     window.addEventListener(
