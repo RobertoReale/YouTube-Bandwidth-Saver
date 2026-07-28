@@ -27,8 +27,20 @@ const videos = [
   });
 
   // Wait for the extension to initialize and open its options page
-  await new Promise(r => setTimeout(r, 2000));
-  const page = browserContext.pages()[0];
+  // We wait until a second page is created (the options page) or a timeout occurs
+  for (let i = 0; i < 10; i++) {
+    if (browserContext.pages().length > 1) break;
+    await new Promise(r => setTimeout(r, 500));
+  }
+  await new Promise(r => setTimeout(r, 1000)); // Give it a moment to settle
+  
+  const initialPages = browserContext.pages();
+  const page = await browserContext.newPage();
+  
+  // Close the initial page(s) (including options page) so we only use the newly created one, which has stealth applied.
+  for (const p of initialPages) {
+    await p.close().catch(() => {});
+  }
 
   // Ad blocking via route to avoid YouTube ads blocking playback
   await page.route('**/*', (route) => {
