@@ -1,6 +1,8 @@
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-extra';
+import stealth from 'puppeteer-extra-plugin-stealth';
 
+chromium.use(stealth());
 const extensionPath = path.resolve('.output/chrome-mv3');
 
 const videos = [
