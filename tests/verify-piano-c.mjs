@@ -70,20 +70,13 @@ const videos = [
 
       // Try clicking Reject All or Accept All if present
       try {
-        const handle = await page.waitForFunction(() => {
-          const btns = Array.from(document.querySelectorAll('button, [role="button"], ytd-button-renderer'));
-          const target = btns.find(el => el.textContent.toLowerCase().includes('reject') || el.textContent.toLowerCase().includes('rifiuta'));
-          if (target) return target;
-          
-          const accept = btns.find(el => el.textContent.toLowerCase().includes('accept') || el.textContent.toLowerCase().includes('accetta'));
-          if (accept) return accept;
-          
-          return null;
-        }, { timeout: 10000 }).catch(() => null);
+        const dialogButton = page.locator('button, [role="button"]').filter({ hasText: /(Reject all|Accept all|Rifiuta tutto|Accetta tutto)/i }).first();
+        await dialogButton.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
         
-        if (handle) {
-          await handle.click({ force: true });
-          console.log('Consent dialog bypassed via trusted click.');
+        if (await dialogButton.isVisible()) {
+          await dialogButton.click({ force: true });
+          console.log('Consent dialog bypassed via Playwright locator.');
+          await page.waitForTimeout(2000); // Wait for dialog animation to finish
         } else {
           console.log('No consent dialog found to bypass.');
         }
