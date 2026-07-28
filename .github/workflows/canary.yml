@@ -21,7 +21,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 9
+          version: 11
 
       - name: Install dependencies
         run: pnpm install
@@ -37,10 +37,9 @@ jobs:
 
       - name: Create Issue on Failure
         if: failure()
-        uses: dacbd/create-issue-action@main
-        with:
-          token: ${{ github.token }}
-          title: "⚠️ Canary fallito: YouTube potrebbe aver cambiato qualcosa"
-          body: |
-            Il test Canary E2E è fallito. YouTube potrebbe aver aggiornato il player o inserito nuovi formati.
-            Controlla i log di GitHub Actions per i dettagli sulle SchemaViolation.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "⚠️ Canary fallito: YouTube potrebbe aver cambiato qualcosa" \
+            --body "Il test Canary E2E è fallito. YouTube potrebbe aver aggiornato il player o inserito nuovi formati.<br>Controlla i log di GitHub Actions per i dettagli sulle SchemaViolation."
