@@ -1,6 +1,7 @@
 name: Canary E2E Test
 
 on:
+  push:
   schedule:
     - cron: '0 4 * * *' # Ogni giorno alle 4:00 UTC
   workflow_dispatch:
