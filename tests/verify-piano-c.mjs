@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright-extra';
 import stealth from 'puppeteer-extra-plugin-stealth';
@@ -20,22 +18,8 @@ const videos = [
 (async () => {
   console.log(`Launching Chromium with extension from: ${extensionPath}`);
 
-  // An authenticated Google session almost never sees YouTube's anonymous-traffic
-  // "Sign in to confirm you're not a bot" check. Populate YOUTUBE_STORAGE_STATE_B64
-  // (base64 of a Playwright storageState.json from a throwaway account) as a CI
-  // secret to enable it; the test falls back to an anonymous session otherwise.
-  let storageStatePath;
-  if (process.env.YOUTUBE_STORAGE_STATE_B64) {
-    storageStatePath = path.join(os.tmpdir(), `yt-storage-state-${Date.now()}.json`);
-    fs.writeFileSync(storageStatePath, Buffer.from(process.env.YOUTUBE_STORAGE_STATE_B64, 'base64'));
-    console.log('Using authenticated YouTube session from YOUTUBE_STORAGE_STATE_B64.');
-  } else {
-    console.log('No YOUTUBE_STORAGE_STATE_B64 provided; using an anonymous session.');
-  }
-
   const browserContext = await chromium.launchPersistentContext('', {
     headless: false, // MV3 extensions often require headful, and automation on YT works better
-    ...(storageStatePath ? { storageState: storageStatePath } : {}),
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -50,8 +34,16 @@ const videos = [
     locale: 'en-US',
   });
 
-  if (storageStatePath) {
-    fs.unlink(storageStatePath, () => {});
+  // An authenticated Google session almost never sees YouTube's anonymous-traffic
+  // "Sign in to confirm you're not a bot" check. Populate YOUTUBE_STORAGE_STATE_B64
+  // (base64 of cookies from a throwaway account, see tests/generate-youtube-session.mjs)
+  // as a CI secret to enable it; falls back to an anonymous session otherwise.
+  if (process.env.YOUTUBE_STORAGE_STATE_B64) {
+    const { cookies } = JSON.parse(Buffer.from(process.env.YOUTUBE_STORAGE_STATE_B64, 'base64').toString());
+    await browserContext.addCookies(cookies);
+    console.log(`Using authenticated YouTube session (${cookies.length} cookies) from YOUTUBE_STORAGE_STATE_B64.`);
+  } else {
+    console.log('No YOUTUBE_STORAGE_STATE_B64 provided; using an anonymous session.');
   }
 
   // Wait for the extension to initialize and open its options page
