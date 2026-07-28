@@ -38,6 +38,9 @@ jobs:
         env:
           # Permettiamo di scaricare uBlock Origin Lite crx on-the-fly per bypassare ads
           UBLOCK_ORIGIN_LITE: true
+          # Sessione YouTube autenticata (opzionale) per evitare il check anti-bot.
+          # Vedi tests/verify-piano-c.mjs per come generare questo secret.
+          YOUTUBE_STORAGE_STATE_B64: ${{ secrets.YOUTUBE_STORAGE_STATE_B64 }}
 
       - name: Upload Screenshot on Failure
         uses: actions/upload-artifact@v4
