@@ -26,7 +26,9 @@ const videos = [
     ],
   });
 
-  const page = await browserContext.newPage();
+  // Wait for the extension to initialize and open its options page
+  await new Promise(r => setTimeout(r, 2000));
+  const page = browserContext.pages()[0];
 
   // Ad blocking via route to avoid YouTube ads blocking playback
   await page.route('**/*', (route) => {
