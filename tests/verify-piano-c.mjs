@@ -19,6 +19,8 @@ const videos = [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
       '--mute-audio',
+      '--disable-background-media-suspend',
+      '--disable-background-timer-throttling',
     ],
   });
 
@@ -54,16 +56,25 @@ const videos = [
 
       // Try clicking Reject All or Accept All if present
       try {
-        const rejectBtn = page
-          .locator(
-            'button:has-text("Reject all"), button:has-text("Rifiuta tutto"), button:has-text("Accept all"), button:has-text("Accetta tutto")',
-          )
-          .first();
-        await rejectBtn.waitFor({ state: 'visible', timeout: 5000 });
-        await rejectBtn.click();
-        console.log('Consent dialog bypassed.');
-      } catch (_e) {
-        // No visible dialog
+        const handle = await page.waitForFunction(() => {
+          const btns = Array.from(document.querySelectorAll('button, [role="button"], ytd-button-renderer'));
+          const target = btns.find(el => el.textContent.toLowerCase().includes('reject') || el.textContent.toLowerCase().includes('rifiuta'));
+          if (target) return target;
+          
+          const accept = btns.find(el => el.textContent.toLowerCase().includes('accept') || el.textContent.toLowerCase().includes('accetta'));
+          if (accept) return accept;
+          
+          return null;
+        }, { timeout: 10000 }).catch(() => null);
+        
+        if (handle) {
+          await handle.click({ force: true });
+          console.log('Consent dialog bypassed via trusted click.');
+        } else {
+          console.log('No consent dialog found to bypass.');
+        }
+      } catch (e) {
+        console.log('Could not bypass consent dialog:', e.message);
       }
 
       // Wait for video to be playing and progressing
@@ -101,7 +112,8 @@ const videos = [
       });
 
       if (!isStillPlaying) {
-        console.error('❌ Player broke after forcing quality at runtime.');
+        await page.screenshot({ path: 'screenshot-broke.png' });
+        console.error('❌ Player broke after forcing quality at runtime. See screenshot-broke.png');
         failed = true;
         break;
       }
@@ -152,7 +164,9 @@ const videos = [
 
   if (failed) {
     console.error('\n🔴 PLAN C VERIFICATION FAILED.');
+    process.exit(1);
   } else {
     console.log('\n🟢 PLAN C VERIFICATION PASSED!');
+    process.exit(0);
   }
 })();

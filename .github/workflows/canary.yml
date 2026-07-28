@@ -38,6 +38,14 @@ jobs:
           # Permettiamo di scaricare uBlock Origin Lite crx on-the-fly per bypassare ads
           UBLOCK_ORIGIN_LITE: true
 
+      - name: Upload Screenshot on Failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failure-screenshot
+          path: screenshot.png
+          retention-days: 7
+
       - name: Create Issue on Failure
         if: failure()
         env:
