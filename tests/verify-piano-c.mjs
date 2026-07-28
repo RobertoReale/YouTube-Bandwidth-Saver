@@ -52,7 +52,17 @@ const videos = [
   for (const video of videos) {
     console.log(`\n--- Testing ${video.name}: ${video.url} ---`);
     try {
-      await page.goto(video.url, { waitUntil: 'domcontentloaded' });
+      try {
+        await page.goto(video.url, { waitUntil: 'domcontentloaded' });
+      } catch (err) {
+        if (err.message.includes('interrupted by another navigation')) {
+          console.log('Navigation interrupted (likely by extension options page), retrying...');
+          await page.waitForTimeout(1000);
+          await page.goto(video.url, { waitUntil: 'domcontentloaded' });
+        } else {
+          throw err;
+        }
+      }
 
       console.log('Waiting for video to start and handling any dialogs...');
 
