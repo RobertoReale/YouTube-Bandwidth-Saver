@@ -26,11 +26,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Build extension
+        run: pnpm build
+
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: pnpm test:e2e
+        run: xvfb-run pnpm test:e2e
         env:
           # Permettiamo di scaricare uBlock Origin Lite crx on-the-fly per bypassare ads
           UBLOCK_ORIGIN_LITE: true
