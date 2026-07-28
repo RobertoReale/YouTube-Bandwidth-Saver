@@ -1,3 +1,6 @@
+packages:
+  - "."
+
 # esbuild ha bisogno del suo script di postinstall per il binario nativo.
 # spawn-sync è una dipendenza transitiva legacy: non le serve, resta negata.
 allowBuilds:
