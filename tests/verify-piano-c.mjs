@@ -5,6 +5,9 @@ import stealth from 'puppeteer-extra-plugin-stealth';
 chromium.use(stealth());
 const extensionPath = path.resolve('.output/chrome-mv3');
 
+// Qualities the extension should force — tiny=144p, small=240p
+const ACCEPTABLE_QUALITIES = new Set(['tiny', 'small']);
+
 const videos = [
   { name: 'Normal', url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' },
   { name: 'Short', url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' },
@@ -38,7 +41,54 @@ const videos = [
     await new Promise(r => setTimeout(r, 500));
   }
   await new Promise(r => setTimeout(r, 1000)); // Give it a moment to settle
-  
+
+  // ── Set extension to "always" mode via service worker ──
+  // The extension uses chrome.storage.sync with key "settings".
+  // Default mode is "per-tab" which means the extension is OFF on new tabs.
+  // We need "always" so it forces low quality on every video.
+  let extensionConfigured = false;
+  const swTarget = browserContext.serviceWorkers();
+  if (swTarget.length > 0) {
+    try {
+      await swTarget[0].evaluate(() => {
+        return chrome.storage.sync.set({
+          settings: { mode: 'always', showOverlay: true, autoEnableOnMusic: true },
+        });
+      });
+      console.log('✅ Extension configured: mode="always" via service worker.');
+      extensionConfigured = true;
+    } catch (e) {
+      console.warn('⚠️  Could not configure extension via service worker:', e.message);
+    }
+  } else {
+    console.warn('⚠️  No service worker found. Trying via background page...');
+  }
+
+  // Fallback: try background pages if service workers didn't work
+  if (!extensionConfigured) {
+    const bgPages = browserContext.backgroundPages();
+    if (bgPages.length > 0) {
+      try {
+        await bgPages[0].evaluate(() => {
+          return chrome.storage.sync.set({
+            settings: { mode: 'always', showOverlay: true, autoEnableOnMusic: true },
+          });
+        });
+        console.log('✅ Extension configured: mode="always" via background page.');
+        extensionConfigured = true;
+      } catch (e) {
+        console.warn('⚠️  Could not configure extension via background page:', e.message);
+      }
+    }
+  }
+
+  if (!extensionConfigured) {
+    console.error('❌ Could not configure extension mode. Test results may be invalid.');
+  }
+
+  // Give the extension a moment to react to the settings change
+  await new Promise(r => setTimeout(r, 1000));
+
   const initialPages = browserContext.pages();
   const page = await browserContext.newPage();
   
@@ -63,8 +113,6 @@ const videos = [
       route.continue();
     }
   });
-
-  // Handle consent dialog by clicking button instead of cookies
 
   let failed = false;
 
@@ -151,12 +199,24 @@ const videos = [
       }
       console.log('✅ Video started and running.');
 
-      // Check quality set by player
+      // ── CRITICAL: Verify extension actually forced low quality ──
+      // Wait a moment for the extension's quality enforcer to apply
+      await page.waitForTimeout(2000);
+
       const quality = await page.evaluate(() => {
         const player = document.querySelector('#movie_player');
         return player?.getPlaybackQuality ? player.getPlaybackQuality() : 'unknown';
       });
       console.log(`Playback quality: ${quality}`);
+
+      if (!ACCEPTABLE_QUALITIES.has(quality)) {
+        console.error(`❌ Quality is "${quality}" but extension should have forced tiny/small!`);
+        console.error('   This means the extension is NOT working correctly.');
+        await page.screenshot({ path: 'screenshot.png' });
+        failed = true;
+        break;
+      }
+      console.log(`✅ Quality "${quality}" confirmed — extension is working.`);
 
       // Wait 5 seconds
       await page.waitForTimeout(5000);
@@ -174,26 +234,61 @@ const videos = [
       }
 
       console.log('Testing seek...');
-      await page.evaluate(() => {
+      const seekInfo = await page.evaluate(() => {
         const video = document.querySelector('video');
-        if (video) video.currentTime += 30;
+        if (!video) return { seeked: false };
+        const duration = video.duration || 0;
+        const current = video.currentTime || 0;
+        // Seek forward by up to 15s, but never past 1s before the end
+        const seekAmount = Math.min(15, duration - current - 1);
+        if (seekAmount < 2) return { seeked: false, reason: 'video too short to seek' };
+        video.currentTime = current + seekAmount;
+        return { seeked: true, from: current.toFixed(1), to: (current + seekAmount).toFixed(1), duration: duration.toFixed(1) };
       });
+      console.log(`Seek info:`, seekInfo);
 
-      // Verify if playback recovers after seek
-      const seekRecovered = await page
-        .waitForFunction(
-          () => {
+      if (!seekInfo.seeked) {
+        console.log('⏭️  Skipping seek test (video too short).');
+      } else {
+        // Verify if playback recovers after seek
+        const seekRecovered = await page
+          .waitForFunction(
+            () => {
+              const video = document.querySelector('video');
+              return video && video.readyState >= 3 && !video.paused;
+            },
+            { timeout: 10000 },
+          )
+          .catch(() => false);
+
+        if (!seekRecovered) {
+          // Check if video simply ended (not an error for short videos)
+          const videoEnded = await page.evaluate(() => {
             const video = document.querySelector('video');
-            return video && video.readyState >= 3 && !video.paused;
-          },
-          { timeout: 10000 },
-        )
-        .catch(() => false);
+            return video?.ended === true;
+          }).catch(() => false);
 
-      if (!seekRecovered) {
-        console.error('❌ Player broke after seek.');
-        failed = true;
-        break;
+          if (videoEnded) {
+            console.log('⏭️  Video ended after seek (expected for short videos).');
+          } else {
+            console.error('❌ Player broke after seek.');
+            failed = true;
+            break;
+          }
+        } else {
+          // Verify quality is still low after seek (extension should re-enforce)
+          const postSeekQuality = await page.evaluate(() => {
+            const player = document.querySelector('#movie_player');
+            return player?.getPlaybackQuality ? player.getPlaybackQuality() : 'unknown';
+          });
+          console.log(`Post-seek quality: ${postSeekQuality}`);
+
+          if (!ACCEPTABLE_QUALITIES.has(postSeekQuality)) {
+            console.error(`❌ Quality drifted to "${postSeekQuality}" after seek! Extension lost control.`);
+            failed = true;
+            break;
+          }
+        }
       }
 
       // Read decoded bytes
